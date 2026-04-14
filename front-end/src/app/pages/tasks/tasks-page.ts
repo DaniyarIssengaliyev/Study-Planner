@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { Task } from '../../models/api.models';
 import { FormsModule } from '@angular/forms';
