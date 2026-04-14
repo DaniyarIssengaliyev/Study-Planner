@@ -80,9 +80,7 @@ export class TasksPage implements OnInit {
       })
       .subscribe({
         next: (updatedTask) => {
-          this.tasks = this.tasks.map((item) =>
-            item.id === updatedTask.id ? updatedTask : item
-          );
+          this.tasks = this.tasks.map((item) => (item.id === updatedTask.id ? updatedTask : item));
           this.errorMessage = '';
         },
         error: (err) => {
