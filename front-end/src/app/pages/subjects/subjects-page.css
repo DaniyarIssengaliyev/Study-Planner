@@ -3,7 +3,7 @@ h2 {
 }
 
 p {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .subjects-list {
@@ -25,6 +25,6 @@ p {
 }
 
 .subject-card p {
-  margin: 0;
+  margin: 0 0 8px;
   color: #4b5563;
 }

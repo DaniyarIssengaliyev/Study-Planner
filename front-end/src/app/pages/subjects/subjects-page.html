@@ -1,19 +1,20 @@
 <h2>Subjects</h2>
-<p>Manage your study subjects here.</p>
+<p>Subjects are loaded from the database.</p>
+
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
 
 <div class="subjects-list">
-  <div class="subject-card">
-    <h3>Mathematics</h3>
-    <p>Algebra, calculus, and problem solving.</p>
-  </div>
-
-  <div class="subject-card">
-    <h3>Physics</h3>
-    <p>Mechanics, electricity, and experiments.</p>
-  </div>
-
-  <div class="subject-card">
-    <h3>Programming</h3>
-    <p>Angular, Django, and web development practice.</p>
-  </div>
+  @if (subjects.length === 0) {
+    <p>No subjects found.</p>
+  } @else {
+    @for (subject of subjects; track subject.id) {
+      <div class="subject-card">
+        <h3>{{ subject.name }}</h3>
+        <p>ID: {{ subject.id }}</p>
+        <p>{{ subject.description || 'No description' }}</p>
+      </div>
+    }
+  }
 </div>
