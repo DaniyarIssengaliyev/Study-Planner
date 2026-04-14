@@ -1,24 +1,28 @@
 <h2>Dashboard</h2>
 <p>Welcome to your Study Planner dashboard.</p>
 
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
+
 <div class="dashboard-cards">
   <div class="card">
     <h3>Total Tasks</h3>
-    <p>0</p>
+    <p>{{ totalTasks }}</p>
   </div>
 
   <div class="card">
     <h3>Completed</h3>
-    <p>0</p>
+    <p>{{ completedTasks }}</p>
   </div>
 
   <div class="card">
     <h3>In Progress</h3>
-    <p>0</p>
+    <p>{{ inProgressTasks }}</p>
   </div>
 
   <div class="card">
     <h3>Subjects</h3>
-    <p>0</p>
+    <p>{{ totalSubjects }}</p>
   </div>
 </div>
