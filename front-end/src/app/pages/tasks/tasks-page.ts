@@ -1,16 +1,16 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { Task } from '../../models/api.models';
-import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-tasks-page',
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
-  imports: [FormsModule],
 })
-export class TasksPage {
+export class TasksPage implements OnInit {
   private api = inject(ApiService);
 
   tasks: Task[] = [];
@@ -24,6 +24,10 @@ export class TasksPage {
     status: 'pending',
     subject: 1,
   };
+
+  ngOnInit(): void {
+    this.loadTasks();
+  }
 
   loadTasks(): void {
     this.api.getTasks().subscribe({
@@ -76,7 +80,9 @@ export class TasksPage {
       })
       .subscribe({
         next: (updatedTask) => {
-          this.tasks = this.tasks.map((item) => (item.id === updatedTask.id ? updatedTask : item));
+          this.tasks = this.tasks.map((item) =>
+            item.id === updatedTask.id ? updatedTask : item
+          );
           this.errorMessage = '';
         },
         error: (err) => {

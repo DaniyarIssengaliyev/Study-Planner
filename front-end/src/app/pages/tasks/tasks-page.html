@@ -29,8 +29,8 @@
 
   <input [(ngModel)]="newTask.subject" name="subject" type="number" placeholder="Subject ID" />
 
-  <button (click)="createTask()">Create Task</button>
-  <button (click)="loadTasks()">Load Tasks</button>
+  <button type="button" (click)="createTask()">Create Task</button>
+  <button type="button" (click)="loadTasks()">Load Tasks</button>
 </div>
 
 <div class="task-list">
@@ -46,8 +46,8 @@
         <p>Priority: {{ task.priority }}</p>
         <p>Subject ID: {{ task.subject }}</p>
 
-        <button (click)="updateTask(task)">Mark Completed</button>
-        <button (click)="deleteTask(task.id)">Delete</button>
+        <button type="button" (click)="updateTask(task)">Mark Completed</button>
+        <button type="button" (click)="deleteTask(task.id)">Delete</button>
       </div>
     }
   }
