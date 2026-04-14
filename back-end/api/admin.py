@@ -5,7 +5,7 @@ from .models import Subject, Task, StudySession, Note
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'color')
-    search_fields = ('name')
+    search_fields = ('name',)
 
 
 @admin.register(Task)
@@ -24,4 +24,4 @@ class StudySessionAdmin(admin.ModelAdmin):
 @admin.register(Note)
 class NoteAdmin(admin.ModelAdmin):
     list_display = ('id', 'task', 'created_at')
-    search_fields = ('content')
+    search_fields = ('content',)
