@@ -1,0 +1,8 @@
+<h2>Tasks</h2>
+
+@for (task of tasks; track task.id) {
+  <div>
+    <h3>{{ task.title }}</h3>
+    <p>{{ task.description }}</p>
+  </div>
+}
