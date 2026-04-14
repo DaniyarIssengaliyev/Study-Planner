@@ -12,7 +12,6 @@ class Subject(models.Model):
 
 class Task(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
     ]
@@ -27,7 +26,7 @@ class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     due_date = models.DateField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
 
     def __str__(self):

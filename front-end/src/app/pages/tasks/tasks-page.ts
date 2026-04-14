@@ -21,7 +21,7 @@ export class TasksPage implements OnInit {
     description: '',
     dueDate: '',
     priority: 'medium',
-    status: 'pending',
+    status: 'in_progress',
     subject: 1,
   };
 
@@ -49,7 +49,7 @@ export class TasksPage implements OnInit {
         description: this.newTask.description,
         due_date: this.newTask.dueDate,
         priority: this.newTask.priority as 'low' | 'medium' | 'high',
-        status: this.newTask.status as 'pending' | 'in_progress' | 'completed',
+        status: this.newTask.status as 'in_progress' | 'completed',
         subject: Number(this.newTask.subject),
       })
       .subscribe({
@@ -62,7 +62,7 @@ export class TasksPage implements OnInit {
             description: '',
             dueDate: '',
             priority: 'medium',
-            status: 'pending',
+            status: 'in_progress',
             subject: 1,
           };
         },
