@@ -73,6 +73,7 @@ export class TasksPage implements OnInit {
       });
   }
 
+<<<<<<< HEAD
   updateTask(task: Task): void {
     this.api
       .updateTask(task.id, {
@@ -88,6 +89,30 @@ export class TasksPage implements OnInit {
           this.errorMessage = 'Failed to update task';
         },
       });
+=======
+updateTask(task: Task): void {
+  this.api
+    .updateTask(task.id, {
+      title: task.title,
+      description: task.description,
+      due_date: task.due_date,
+      priority: task.priority,
+      status: 'completed',
+      subject: task.subject,
+    })
+    .subscribe({
+      next: (updatedTask) => {
+        this.tasks = this.tasks.map((item) =>
+          item.id === updatedTask.id ? updatedTask : item
+        );
+        this.errorMessage = '';
+      },
+      error: (err) => {
+        console.error('Error updating task:', err);
+        this.errorMessage = 'Failed to update task';
+      },
+    });
+>>>>>>> a3a2d3ca282dc7e63c26c1b0e0da4b2fb952d94a
   }
 
   deleteTask(id: number): void {
