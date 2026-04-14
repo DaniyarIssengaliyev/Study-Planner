@@ -1,8 +1,39 @@
 <h2>Tasks</h2>
 
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
+
+<div>
+  <input [(ngModel)]="newTask.title" name="title" placeholder="Title" />
+  <textarea
+    [(ngModel)]="newTask.description"
+    name="description"
+    placeholder="Description"
+  ></textarea>
+  <input [(ngModel)]="newTask.dueDate" name="dueDate" type="date" />
+  <select [(ngModel)]="newTask.priority" name="priority">
+    <option value="low">Low</option>
+    <option value="medium">Medium</option>
+    <option value="high">High</option>
+  </select>
+  <select [(ngModel)]="newTask.status" name="status">
+    <option value="pending">Pending</option>
+    <option value="in_progress">In progress</option>
+    <option value="completed">Completed</option>
+  </select>
+  <input [(ngModel)]="newTask.subject" name="subject" type="number" placeholder="Subject ID" />
+</div>
+
+<button (click)="loadTasks()">Load Tasks</button>
+<button (click)="createTask()">Create Task</button>
+
 @for (task of tasks; track task.id) {
   <div>
     <h3>{{ task.title }}</h3>
     <p>{{ task.description }}</p>
+    <p>{{ task.status }}</p>
+    <button (click)="updateTask(task)">Mark Completed</button>
+    <button (click)="deleteTask(task.id)">Delete</button>
   </div>
 }
