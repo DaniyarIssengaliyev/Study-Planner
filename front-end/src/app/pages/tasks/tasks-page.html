@@ -1,8 +1,6 @@
 <h2>Tasks</h2>
 
-@if (errorMessage) {
-  <p>{{ errorMessage }}</p>
-}
+<div *ngIf="errorMessage()">{{ errorMessage() }}</div>
 
 <div class="task-form">
   <input [(ngModel)]="newTask.title" name="title" placeholder="Title" />
@@ -29,25 +27,20 @@
   <input [(ngModel)]="newTask.subject" name="subject" type="number" placeholder="Subject ID" />
 
   <button type="button" (click)="createTask()">Create Task</button>
-  <button type="button" (click)="loadTasks()">Load Tasks</button>
 </div>
 
-<div class="task-list">
-  @if (tasks.length === 0) {
-    <p>No tasks yet.</p>
-  } @else {
-    @for (task of tasks; track task.id) {
-      <div class="task-card">
-        <h3>{{ task.title }}</h3>
-        <p>{{ task.description }}</p>
-        <p>Due: {{ task.due_date }}</p>
-        <p>Status: {{ task.status }}</p>
-        <p>Priority: {{ task.priority }}</p>
-        <p>Subject ID: {{ task.subject }}</p>
+<div *ngIf="!isLoading() && !errorMessage()" class="task-list">
+  @for (task of tasks(); track task.id) {
+    <div class="task-card">
+      <h3>{{ task.title }}</h3>
+      <p>{{ task.description }}</p>
+      <p>Due: {{ task.due_date }}</p>
+      <p>Status: {{ task.status }}</p>
+      <p>Priority: {{ task.priority }}</p>
+      <p>Subject ID: {{ task.subject }}</p>
 
-        <button type="button" (click)="updateTask(task)">Mark Completed</button>
-        <button type="button" (click)="deleteTask(task.id)">Delete</button>
-      </div>
-    }
+      <button type="button" (click)="updateTask(task, $event)">Mark Completed</button>
+      <button type="button" (click)="deleteTask(task.id, $event)">Delete</button>
+    </div>
   }
 </div>

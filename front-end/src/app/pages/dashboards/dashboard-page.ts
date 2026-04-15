@@ -1,10 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { Task, Subject } from '../../models/api.models';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-dashboard-page',
+  imports: [CommonModule],
   standalone: true,
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css',
@@ -12,38 +14,36 @@ import { Task, Subject } from '../../models/api.models';
 export class DashboardPage implements OnInit {
   private api = inject(ApiService);
 
-  tasks: Task[] = [];
-  subjects: Subject[] = [];
-  errorMessage = '';
+  tasks = signal<Task[]>([]);
+  subjects = signal<Subject[]>([]);
+  isLoading = signal(true);
+  errorMessage = signal<string | null>(null);
 
-  totalTasks = 0;
-  completedTasks = 0;
-  inProgressTasks = 0;
-  totalSubjects = 0;
+  totalTasks = computed(() => this.tasks().length);
+  completedTasks = computed(
+    () => this.tasks().filter((task) => task.status === 'completed').length,
+  );
+  inProgressTasks = computed(
+    () => this.tasks().filter((task) => task.status === 'in_progress').length,
+  );
+  totalSubjects = computed(() => this.subjects().length);
 
   ngOnInit(): void {
-    this.loadDashboardData();
-  }
-
-  loadDashboardData(): void {
     forkJoin({
       tasks: this.api.getTasks(),
       subjects: this.api.getSubjects(),
     }).subscribe({
       next: ({ tasks, subjects }) => {
-        this.tasks = tasks;
-        this.subjects = subjects;
+        this.tasks.set(tasks);
+        this.subjects.set(subjects);
 
-        this.totalTasks = tasks.length;
-        this.completedTasks = tasks.filter((task) => task.status === 'completed').length;
-        this.inProgressTasks = tasks.filter((task) => task.status === 'in_progress').length;
-        this.totalSubjects = subjects.length;
-
-        this.errorMessage = '';
+        this.errorMessage.set('');
+        this.isLoading.set(false);
       },
       error: (err) => {
         console.error('Dashboard load error:', err);
-        this.errorMessage = 'Failed to load dashboard data';
+        this.errorMessage.set('Failed to load dashboard data');
+        this.isLoading.set(false);
       },
     });
   }

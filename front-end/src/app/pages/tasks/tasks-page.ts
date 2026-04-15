@@ -1,20 +1,22 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { Task } from '../../models/api.models';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-tasks-page',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CommonModule],
   templateUrl: './tasks-page.html',
   styleUrl: './tasks-page.css',
 })
 export class TasksPage implements OnInit {
   private api = inject(ApiService);
 
-  tasks: Task[] = [];
-  errorMessage = '';
+  tasks = signal<Task[]>([]);
+  isLoading = signal(true);
+  errorMessage = signal<string | null>(null);
 
   newTask = {
     title: '',
@@ -26,18 +28,16 @@ export class TasksPage implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadTasks();
-  }
-
-  loadTasks(): void {
     this.api.getTasks().subscribe({
       next: (data) => {
-        this.tasks = data;
-        this.errorMessage = '';
+        this.tasks.set(data);
+        this.errorMessage.set('');
+        this.isLoading.set(false);
       },
       error: (err) => {
         console.error('Error loading tasks:', err);
-        this.errorMessage = 'Failed to load tasks';
+        this.errorMessage.set('Failed to load tasks');
+        this.isLoading.set(false);
       },
     });
   }
@@ -54,8 +54,8 @@ export class TasksPage implements OnInit {
       })
       .subscribe({
         next: (task) => {
-          this.tasks.push(task);
-          this.errorMessage = '';
+          this.tasks.update((current) => current.concat(task));
+          this.errorMessage.set('');
 
           this.newTask = {
             title: '',
@@ -68,12 +68,13 @@ export class TasksPage implements OnInit {
         },
         error: (err) => {
           console.error('Error creating task:', err);
-          this.errorMessage = 'Failed to create task';
+          this.errorMessage.set('Failed to create task');
         },
       });
   }
 
-  updateTask(task: Task): void {
+  updateTask(task: Task, event: Event): void {
+    event.stopPropagation();
     this.api
       .updateTask(task.id, {
         title: task.title,
@@ -85,25 +86,28 @@ export class TasksPage implements OnInit {
       })
       .subscribe({
         next: (updatedTask) => {
-          this.tasks = this.tasks.map((item) => (item.id === updatedTask.id ? updatedTask : item));
-          this.errorMessage = '';
+          this.tasks.update((current) =>
+            current.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
+          );
+          this.errorMessage.set('Failed to create task');
         },
         error: (err) => {
           console.error('Error updating task:', err);
-          this.errorMessage = 'Failed to update task';
+          this.errorMessage.set('Failed to update task');
         },
       });
   }
 
-  deleteTask(id: number): void {
+  deleteTask(id: number, event: Event): void {
+    event.stopPropagation();
     this.api.deleteTask(id).subscribe({
       next: () => {
-        this.tasks = this.tasks.filter((task) => task.id !== id);
-        this.errorMessage = '';
+        this.tasks.update((current) => current.filter((task) => task.id !== id));
+        this.errorMessage.set('');
       },
       error: (err) => {
         console.error('Error deleting task:', err);
-        this.errorMessage = 'Failed to delete task';
+        this.errorMessage.set('Failed to delete task');
       },
     });
   }

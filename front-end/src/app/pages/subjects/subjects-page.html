@@ -1,20 +1,14 @@
 <h2>Subjects</h2>
 <p>Subjects are loaded from the database.</p>
 
-@if (errorMessage) {
-  <p>{{ errorMessage }}</p>
-}
+<div *ngIf="errorMessage()">{{ errorMessage() }}</div>
 
-<div class="subjects-list">
-  @if (subjects.length === 0) {
-    <p>No subjects found.</p>
-  } @else {
-    @for (subject of subjects; track subject.id) {
-      <div class="subject-card">
-        <h3>{{ subject.name }}</h3>
-        <p>ID: {{ subject.id }}</p>
-        <p>{{ subject.description || 'No description' }}</p>
-      </div>
-    }
+<div *ngIf="!isLoading() && !errorMessage()" class="subjects-list">
+  @for (subject of subjects(); track subject.id) {
+    <div class="subject-card">
+      <h3>{{ subject.name }}</h3>
+      <p>ID: {{ subject.id }}</p>
+      <p>{{ subject.description || 'No description' }}</p>
+    </div>
   }
 </div>
