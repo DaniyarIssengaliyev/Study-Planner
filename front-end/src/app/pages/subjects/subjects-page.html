@@ -3,6 +3,17 @@
 
 <div *ngIf="errorMessage()">{{ errorMessage() }}</div>
 
+<div class="subject-form">
+  <input [(ngModel)]="newSubject.name" name="name" placeholder="Subject name" />
+  <textarea
+    [(ngModel)]="newSubject.description"
+    name="description"
+    placeholder="Description"
+  ></textarea>
+  <input [(ngModel)]="newSubject.color" name="color" placeholder="Color" />
+  <button type="button" (click)="createSubject()">Create Subject</button>
+</div>
+
 <div *ngIf="!isLoading() && !errorMessage()" class="subjects-list">
   @for (subject of subjects(); track subject.id) {
     <div class="subject-card">

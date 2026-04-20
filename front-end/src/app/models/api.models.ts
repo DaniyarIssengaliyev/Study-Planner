@@ -16,7 +16,7 @@ export interface Task {
   title: string;
   description: string;
   due_date: string;
-  status: 'in_progress' | 'completed';
+  status: 'todo' | 'in_progress' | 'completed' | 'overdue';
   priority: 'low' | 'medium' | 'high';
   subject: number;
   subject_name?: string;
@@ -37,7 +37,7 @@ export interface CreateTaskRequest {
   title: string;
   description: string;
   due_date: string;
-  status: 'in_progress' | 'completed';
+  status: 'todo' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   subject: number;
 }

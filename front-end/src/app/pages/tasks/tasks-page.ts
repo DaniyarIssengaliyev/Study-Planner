@@ -1,7 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
-import { Task } from '../../models/api.models';
+import { Subject, Task } from '../../models/api.models';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -15,6 +16,7 @@ export class TasksPage implements OnInit {
   private api = inject(ApiService);
 
   tasks = signal<Task[]>([]);
+  subjects = signal<Subject[]>([]);
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
 
@@ -23,34 +25,52 @@ export class TasksPage implements OnInit {
     description: '',
     dueDate: '',
     priority: 'medium',
-    status: 'in_progress',
-    subject: 1,
+    status: 'todo',
+    subject: null as number | null,
   };
 
   ngOnInit(): void {
-    this.api.getTasks().subscribe({
-      next: (data) => {
-        this.tasks.set(data);
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.isLoading.set(true);
+
+    forkJoin({
+      tasks: this.api.getTasks(),
+      subjects: this.api.getSubjects(),
+    }).subscribe({
+      next: ({ tasks, subjects }) => {
+        this.tasks.set(tasks);
+        this.subjects.set(subjects);
+        if (!this.newTask.subject && subjects.length > 0) {
+          this.newTask.subject = subjects[0].id;
+        }
         this.errorMessage.set('');
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('Error loading tasks:', err);
-        this.errorMessage.set('Failed to load tasks');
+        console.error('Error loading tasks or subjects:', err);
+        this.errorMessage.set('Failed to load tasks and subjects');
         this.isLoading.set(false);
       },
     });
   }
 
   createTask(): void {
+    if (!this.newTask.title.trim() || !this.newTask.dueDate || !this.newTask.subject) {
+      this.errorMessage.set('Fill in title, due date and subject before creating a task');
+      return;
+    }
+
     this.api
       .createTask({
-        title: this.newTask.title,
-        description: this.newTask.description,
+        title: this.newTask.title.trim(),
+        description: this.newTask.description.trim(),
         due_date: this.newTask.dueDate,
         priority: this.newTask.priority as 'low' | 'medium' | 'high',
-        status: this.newTask.status as 'in_progress' | 'completed',
-        subject: Number(this.newTask.subject),
+        status: this.newTask.status as 'todo' | 'in_progress' | 'completed',
+        subject: this.newTask.subject,
       })
       .subscribe({
         next: (task) => {
@@ -62,8 +82,8 @@ export class TasksPage implements OnInit {
             description: '',
             dueDate: '',
             priority: 'medium',
-            status: 'in_progress',
-            subject: 1,
+            status: 'todo',
+            subject: this.subjects()[0]?.id ?? null,
           };
         },
         error: (err) => {
@@ -89,7 +109,7 @@ export class TasksPage implements OnInit {
           this.tasks.update((current) =>
             current.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
           );
-          this.errorMessage.set('Failed to create task');
+          this.errorMessage.set('');
         },
         error: (err) => {
           console.error('Error updating task:', err);
