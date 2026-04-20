@@ -1,0 +1,30 @@
+<div class="login-page">
+  <div class="login-card">
+    <h2>Login</h2>
+    <p>Sign in to Study Planner.</p>
+
+    <div *ngIf="errorMessage()" class="error-message">
+      {{ errorMessage() }}
+    </div>
+
+    <form (ngSubmit)="submit()" class="login-form">
+      <input
+        [(ngModel)]="form.username"
+        name="username"
+        type="text"
+        placeholder="Username"
+      />
+
+      <input
+        [(ngModel)]="form.password"
+        name="password"
+        type="password"
+        placeholder="Password"
+      />
+
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Signing in...' : 'Sign In' }}
+      </button>
+    </form>
+  </div>
+</div>

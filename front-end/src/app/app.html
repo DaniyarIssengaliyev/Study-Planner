@@ -1,15 +1,24 @@
-<div class="layout">
-  <aside class="sidebar">
-    <h1>Study Planner</h1>
+<div class="layout" [class.layout-authenticated]="auth.isAuthenticated()">
+  @if (auth.isAuthenticated()) {
+    <aside class="sidebar">
+      <h1>Study Planner</h1>
 
-    <nav class="navigation">
-      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-      <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
-      <a routerLink="/subjects" routerLinkActive="active">Subjects</a>
-    </nav>
-  </aside>
+      <div class="user-block">
+        <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
+        <span>{{ auth.currentUser()?.profile?.role }}</span>
+      </div>
 
-  <main class="content">
+      <nav class="navigation">
+        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
+        <a routerLink="/subjects" routerLinkActive="active">Subjects</a>
+      </nav>
+
+      <button type="button" class="logout-button" (click)="logout()">Logout</button>
+    </aside>
+  }
+
+  <main class="content" [class.content-guest]="!auth.isAuthenticated()">
     <router-outlet />
   </main>
 </div>

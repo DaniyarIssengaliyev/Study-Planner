@@ -1,7 +1,19 @@
+export interface Faculty {
+  id: number;
+  name: string;
+}
+
+export interface Profile {
+  full_name: string;
+  role: 'superadmin' | 'student';
+  faculty: Faculty | null;
+}
+
 export interface User {
   id: number;
   username: string;
   email: string;
+  profile: Profile;
 }
 
 export interface Subject {
@@ -27,10 +39,19 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+  full_name: string;
+  role?: 'superadmin' | 'student';
+  faculty_id?: number | null;
+}
+
 export interface LoginResponse {
   access: string;
-  refresh?: string;
-  user?: User;
+  refresh: string;
+  user: User;
 }
 
 export interface CreateTaskRequest {

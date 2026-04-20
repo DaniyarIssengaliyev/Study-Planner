@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {
   LoginRequest,
   LoginResponse,
+  RegisterRequest,
+  User,
   Task,
   CreateTaskRequest,
   UpdateTaskRequest,
@@ -18,8 +20,28 @@ export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = 'http://127.0.0.1:8000/api';
 
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('study_planner_access_token');
+
+    return token
+      ? new HttpHeaders({
+          Authorization: `Bearer ${token}`,
+        })
+      : new HttpHeaders();
+  }
+
+  register(data: RegisterRequest): Observable<User> {
+    return this.http.post<User>(`${this.baseUrl}/auth/register/`, data);
+  }
+
   login(data: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/login/`, data);
+    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login/`, data);
+  }
+
+  getMe(): Observable<User> {
+    return this.http.get<User>(`${this.baseUrl}/auth/me/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   getTasks(): Observable<Task[]> {
