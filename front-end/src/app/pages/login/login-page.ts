@@ -1,4 +1,11 @@
-import { AfterViewInit, Component, NgZone, OnDestroy, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  NgZone,
+  OnDestroy,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -28,11 +35,19 @@ export class LoginPage implements AfterViewInit, OnDestroy {
     password: '',
   };
 
+  private googleRenderAttempts = 0;
+  private googleRenderTimer: ReturnType<typeof setTimeout> | null = null;
+
   ngAfterViewInit(): void {
-    this.renderGoogleButton();
+    this.tryRenderGoogleButton();
   }
 
   ngOnDestroy(): void {
+    if (this.googleRenderTimer) {
+      clearTimeout(this.googleRenderTimer);
+      this.googleRenderTimer = null;
+    }
+
     const container = document.getElementById('google-signin-button');
     if (container) {
       container.innerHTML = '';
@@ -66,11 +81,21 @@ export class LoginPage implements AfterViewInit, OnDestroy {
       });
   }
 
-  private renderGoogleButton(): void {
+  private tryRenderGoogleButton(): void {
     const googleApi = window.google?.accounts?.id;
     const container = document.getElementById('google-signin-button');
 
-    if (!googleApi || !container || !GOOGLE_CLIENT_ID) {
+    if (!container || !GOOGLE_CLIENT_ID) {
+      return;
+    }
+
+    if (!googleApi) {
+      if (this.googleRenderAttempts < 20) {
+        this.googleRenderAttempts += 1;
+        this.googleRenderTimer = setTimeout(() => {
+          this.tryRenderGoogleButton();
+        }, 300);
+      }
       return;
     }
 
