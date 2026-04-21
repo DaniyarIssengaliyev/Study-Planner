@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { Subject, Task } from '../../models/api.models';
 import { CommonModule } from '@angular/common';
@@ -17,8 +16,10 @@ export class TasksPage implements OnInit {
 
   tasks = signal<Task[]>([]);
   subjects = signal<Subject[]>([]);
-  isLoading = signal(true);
+  isLoadingTasks = signal(true);
+  isLoadingSubjects = signal(true);
   errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
 
   newTask = {
     title: '',
@@ -30,36 +31,62 @@ export class TasksPage implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadData();
+    this.loadSubjects();
+    this.loadTasks();
   }
 
-  loadData(): void {
-    this.isLoading.set(true);
+  loadSubjects(): void {
+    this.isLoadingSubjects.set(true);
 
-    forkJoin({
-      tasks: this.api.getTasks(),
-      subjects: this.api.getSubjects(),
-    }).subscribe({
-      next: ({ tasks, subjects }) => {
-        this.tasks.set(tasks);
-        this.subjects.set(subjects);
-        if (!this.newTask.subject && subjects.length > 0) {
-          this.newTask.subject = subjects[0].id;
+    this.api.getSubjects().subscribe({
+      next: (subjects) => {
+        const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name));
+        this.subjects.set(sortedSubjects);
+
+        if (!this.newTask.subject && sortedSubjects.length > 0) {
+          this.newTask.subject = sortedSubjects[0].id;
         }
-        this.errorMessage.set('');
-        this.isLoading.set(false);
+
+        this.errorMessage.set(null);
+        this.isLoadingSubjects.set(false);
       },
       error: (err) => {
-        console.error('Error loading tasks or subjects:', err);
-        this.errorMessage.set('Failed to load tasks and subjects');
-        this.isLoading.set(false);
+        console.error('Error loading subjects:', err);
+        this.errorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Не удалось загрузить список предметов.',
+        );
+        this.isLoadingSubjects.set(false);
+      },
+    });
+  }
+
+  loadTasks(): void {
+    this.isLoadingTasks.set(true);
+
+    this.api.getTasks().subscribe({
+      next: (tasks) => {
+        this.tasks.set(tasks);
+        this.errorMessage.set(null);
+        this.isLoadingTasks.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading tasks:', err);
+        this.errorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Не удалось загрузить задачи.',
+        );
+        this.isLoadingTasks.set(false);
       },
     });
   }
 
   createTask(): void {
-    if (!this.newTask.title.trim() || !this.newTask.dueDate || !this.newTask.subject) {
-      this.errorMessage.set('Fill in title, due date and subject before creating a task');
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const subjectId = this.newTask.subject ? Number(this.newTask.subject) : null;
+
+    if (!this.newTask.title.trim() || !this.newTask.dueDate || !subjectId) {
+      this.errorMessage.set('Заполните название, дедлайн и предмет.');
       return;
     }
 
@@ -70,12 +97,13 @@ export class TasksPage implements OnInit {
         due_date: this.newTask.dueDate,
         priority: this.newTask.priority as 'low' | 'medium' | 'high',
         status: this.newTask.status as 'todo' | 'in_progress' | 'completed',
-        subject: this.newTask.subject,
+        subject: subjectId,
       })
       .subscribe({
         next: (task) => {
           this.tasks.update((current) => current.concat(task));
-          this.errorMessage.set('');
+          this.successMessage.set('Задача создана.');
+          this.errorMessage.set(null);
 
           this.newTask = {
             title: '',
@@ -88,13 +116,17 @@ export class TasksPage implements OnInit {
         },
         error: (err) => {
           console.error('Error creating task:', err);
-          this.errorMessage.set('Failed to create task');
+          this.errorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Не удалось создать задачу.',
+          );
+          this.successMessage.set(null);
         },
       });
   }
 
   updateTask(task: Task, event: Event): void {
     event.stopPropagation();
+
     this.api
       .updateTask(task.id, {
         title: task.title,
@@ -109,26 +141,65 @@ export class TasksPage implements OnInit {
           this.tasks.update((current) =>
             current.map((item) => (item.id === updatedTask.id ? updatedTask : item)),
           );
-          this.errorMessage.set('');
+          this.errorMessage.set(null);
+          this.successMessage.set('Задача отмечена как выполненная.');
         },
         error: (err) => {
           console.error('Error updating task:', err);
-          this.errorMessage.set('Failed to update task');
+          this.errorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Не удалось обновить задачу.',
+          );
+          this.successMessage.set(null);
         },
       });
   }
 
   deleteTask(id: number, event: Event): void {
     event.stopPropagation();
+
     this.api.deleteTask(id).subscribe({
       next: () => {
         this.tasks.update((current) => current.filter((task) => task.id !== id));
-        this.errorMessage.set('');
+        this.errorMessage.set(null);
+        this.successMessage.set('Задача удалена.');
       },
       error: (err) => {
         console.error('Error deleting task:', err);
-        this.errorMessage.set('Failed to delete task');
+        this.errorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Не удалось удалить задачу.',
+        );
+        this.successMessage.set(null);
       },
     });
+  }
+
+  private extractErrorMessage(error: unknown): string | null {
+    if (!error) {
+      return null;
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (typeof error === 'object' && error !== null) {
+      const detail = (error as { detail?: unknown }).detail;
+      if (typeof detail === 'string') {
+        return detail;
+      }
+
+      const values = Object.values(error as Record<string, unknown>);
+      for (const value of values) {
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+          return value[0];
+        }
+
+        if (typeof value === 'string') {
+          return value;
+        }
+      }
+    }
+
+    return null;
   }
 }

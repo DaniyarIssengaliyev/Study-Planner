@@ -1,0 +1,61 @@
+<section class="admin-page">
+  <header class="page-header">
+    <h2>Панель Superadmin</h2>
+    <p>Здесь можно добавлять и удалять предметы.</p>
+  </header>
+
+  <div *ngIf="errorMessage()" class="error-message">
+    {{ errorMessage() }}
+  </div>
+
+  <div *ngIf="successMessage()" class="success-message">
+    {{ successMessage() }}
+  </div>
+
+  <section class="form-card">
+    <h3>Новый предмет</h3>
+
+    <label class="field-label">
+      <span>Название *</span>
+      <input [(ngModel)]="newSubject.name" name="name" placeholder="Например, Databases" />
+    </label>
+
+    <label class="field-label">
+      <span>Описание</span>
+      <textarea
+        [(ngModel)]="newSubject.description"
+        name="description"
+        placeholder="Краткое описание предмета"
+      ></textarea>
+    </label>
+
+    <label class="field-label">
+      <span>Цвет</span>
+      <input [(ngModel)]="newSubject.color" name="color" placeholder="#2563eb" />
+    </label>
+
+    <button type="button" (click)="createSubject()">Добавить предмет</button>
+  </section>
+
+  <section class="subjects-list" *ngIf="!isLoading()">
+    <article class="subject-card" *ngFor="let subject of subjects()">
+      <div
+        class="subject-color"
+        [style.background]="subject.color || '#2563eb'"
+      ></div>
+
+      <div class="subject-content">
+        <h3>{{ subject.name }}</h3>
+        <p>{{ subject.description || 'Описание пока не добавлено.' }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="delete-button"
+        (click)="deleteSubject(subject)"
+      >
+        Удалить
+      </button>
+    </article>
+  </section>
+</section>

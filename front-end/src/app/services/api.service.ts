@@ -10,6 +10,7 @@ import {
   UpdateTaskRequest,
   Subject,
   CreateSubjectRequest,
+  Faculty,
 } from '../models/api.models';
 import { Observable } from 'rxjs';
 
@@ -50,6 +51,10 @@ export class ApiService {
     });
   }
 
+  getFaculties(): Observable<Faculty[]> {
+    return this.http.get<Faculty[]>(`${this.baseUrl}/faculties/`);
+  }
+
   getTasks(): Observable<Task[]> {
     return this.http.get<Task[]>(`${this.baseUrl}/tasks/`, {
       headers: this.getAuthHeaders(),
@@ -88,6 +93,12 @@ export class ApiService {
 
   createSubject(data: CreateSubjectRequest): Observable<Subject> {
     return this.http.post<Subject>(`${this.baseUrl}/subjects/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  deleteSubject(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/subjects/${id}/`, {
       headers: this.getAuthHeaders(),
     });
   }

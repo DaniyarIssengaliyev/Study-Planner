@@ -1,24 +1,40 @@
 <div class="login-page">
   <div class="login-card">
-    <h2>Login</h2>
-    <p>Sign in to Study Planner.</p>
+    <h2>Вход</h2>
+    <p>Войдите в Study Planner.</p>
 
     <div *ngIf="errorMessage()" class="error-message">
       {{ errorMessage() }}
     </div>
 
     <form (ngSubmit)="submit()" class="login-form">
-      <input [(ngModel)]="form.username" name="username" type="text" placeholder="Username" />
+      <label class="field-label">
+        <span>Логин *</span>
+        <input
+          [(ngModel)]="form.login"
+          name="login"
+          type="text"
+          placeholder="Email или username"
+        />
+      </label>
 
-      <input [(ngModel)]="form.password" name="password" type="password" placeholder="Password" />
+      <label class="field-label">
+        <span>Пароль *</span>
+        <input
+          [(ngModel)]="form.password"
+          name="password"
+          type="password"
+          placeholder="Введите пароль"
+        />
+      </label>
 
       <button type="submit" [disabled]="isLoading()">
-        {{ isLoading() ? 'Signing in...' : 'Sign In' }}
+        {{ isLoading() ? 'Входим...' : 'Войти' }}
       </button>
     </form>
 
     <div class="divider">
-      <span>or</span>
+      <span>или</span>
     </div>
 
     <div class="google-button-wrap">
@@ -26,8 +42,8 @@
     </div>
 
     <p class="auth-link">
-      No account yet?
-      <a routerLink="/register">Create one</a>
+      Нет аккаунта?
+      <a routerLink="/register">Зарегистрироваться</a>
     </p>
   </div>
 </div>

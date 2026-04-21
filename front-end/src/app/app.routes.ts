@@ -4,8 +4,10 @@ import { TasksPage } from './pages/tasks/tasks-page';
 import { SubjectsPage } from './pages/subjects/subjects-page';
 import { LoginPage } from './pages/login/login-page';
 import { RegisterPage } from './pages/register/register-page';
+import { AdminSubjectsPage } from './pages/admin-subjects/admin-subjects-page';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { superadminGuard } from './guards/superadmin.guard';
 
 export const routes: Routes = [
   {
@@ -37,5 +39,10 @@ export const routes: Routes = [
     path: 'subjects',
     component: SubjectsPage,
     canActivate: [authGuard],
+  },
+  {
+    path: 'admin/subjects',
+    component: AdminSubjectsPage,
+    canActivate: [superadminGuard],
   },
 ];

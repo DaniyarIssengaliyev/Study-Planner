@@ -1,8 +1,7 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { ApiService } from '../../services/api.service';
-import { Task, Subject } from '../../models/api.models';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ApiService } from '../../services/api.service';
+import { Subject, Task } from '../../models/api.models';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -16,7 +15,8 @@ export class DashboardPage implements OnInit {
 
   tasks = signal<Task[]>([]);
   subjects = signal<Subject[]>([]);
-  isLoading = signal(true);
+  isLoadingTasks = signal(true);
+  isLoadingSubjects = signal(true);
   errorMessage = signal<string | null>(null);
 
   totalTasks = computed(() => this.tasks().length);
@@ -26,24 +26,48 @@ export class DashboardPage implements OnInit {
   inProgressTasks = computed(
     () => this.tasks().filter((task) => task.status === 'in_progress').length,
   );
+  overdueTasks = computed(
+    () => this.tasks().filter((task) => task.status === 'overdue').length,
+  );
   totalSubjects = computed(() => this.subjects().length);
 
   ngOnInit(): void {
-    forkJoin({
-      tasks: this.api.getTasks(),
-      subjects: this.api.getSubjects(),
-    }).subscribe({
-      next: ({ tasks, subjects }) => {
-        this.tasks.set(tasks);
-        this.subjects.set(subjects);
+    this.loadTasks();
+    this.loadSubjects();
+  }
 
-        this.errorMessage.set('');
-        this.isLoading.set(false);
+  loadTasks(): void {
+    this.isLoadingTasks.set(true);
+
+    this.api.getTasks().subscribe({
+      next: (tasks) => {
+        this.tasks.set(tasks);
+        this.isLoadingTasks.set(false);
       },
       error: (err) => {
-        console.error('Dashboard load error:', err);
-        this.errorMessage.set('Failed to load dashboard data');
-        this.isLoading.set(false);
+        console.error('Dashboard tasks load error:', err);
+        this.errorMessage.set(
+          err?.error?.detail || 'Failed to load tasks for dashboard.',
+        );
+        this.isLoadingTasks.set(false);
+      },
+    });
+  }
+
+  loadSubjects(): void {
+    this.isLoadingSubjects.set(true);
+
+    this.api.getSubjects().subscribe({
+      next: (subjects) => {
+        this.subjects.set(subjects);
+        this.isLoadingSubjects.set(false);
+      },
+      error: (err) => {
+        console.error('Dashboard subjects load error:', err);
+        this.errorMessage.set(
+          err?.error?.detail || 'Failed to load subjects for dashboard.',
+        );
+        this.isLoadingSubjects.set(false);
       },
     });
   }

@@ -1,9 +1,9 @@
 <h2>Dashboard</h2>
 <p>Welcome to your Study Planner dashboard.</p>
 
-<div *ngIf="errorMessage()">{{ errorMessage() }}</div>
+<div *ngIf="errorMessage()" class="error-message">{{ errorMessage() }}</div>
 
-<div *ngIf="!isLoading() && !errorMessage()" class="dashboard-cards">
+<div *ngIf="!isLoadingTasks() && !isLoadingSubjects()" class="dashboard-cards">
   <div class="card">
     <h3>Total Tasks</h3>
     <p>{{ totalTasks() }}</p>
@@ -17,6 +17,11 @@
   <div class="card">
     <h3>In Progress</h3>
     <p>{{ inProgressTasks() }}</p>
+  </div>
+
+  <div class="card">
+    <h3>Overdue</h3>
+    <p>{{ overdueTasks() }}</p>
   </div>
 
   <div class="card">

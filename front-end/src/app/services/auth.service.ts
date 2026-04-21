@@ -13,7 +13,14 @@ export class AuthService {
 
   currentUser = signal<User | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
-  isSuperadmin = computed(() => this.currentUser()?.profile.role === 'superadmin');
+  isSuperadmin = computed(() => {
+    const user = this.currentUser();
+    if (user) {
+      return user.profile.role === 'superadmin';
+    }
+
+    return this.getRoleFromToken() === 'superadmin';
+  });
 
   register(data: RegisterRequest): Observable<User> {
     return this.api.register(data);
@@ -56,5 +63,24 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
+  }
+
+  getDefaultRoute(): string {
+    return this.isSuperadmin() ? '/admin/subjects' : '/dashboard';
+  }
+
+  private getRoleFromToken(): string | null {
+    const token = this.getToken();
+
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.role ?? null;
+    } catch {
+      return null;
+    }
   }
 }

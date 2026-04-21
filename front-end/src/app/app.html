@@ -1,24 +1,36 @@
-<div class="layout" [class.layout-authenticated]="auth.isAuthenticated()">
-  @if (auth.isAuthenticated()) {
-    <aside class="sidebar">
-      <h1>Study Planner</h1>
+@if (isBootstrapping()) {
+  <div class="app-loading">
+    <div class="app-loading-card">
+      <h2>Study Planner</h2>
+      <p>Загрузка приложения...</p>
+    </div>
+  </div>
+} @else {
+  <div class="layout" [class.layout-authenticated]="auth.isAuthenticated()">
+    @if (auth.isAuthenticated()) {
+      <aside class="sidebar">
+        <h1>Study Planner</h1>
 
-      <div class="user-block">
-        <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
-        <span>{{ auth.currentUser()?.profile?.role }}</span>
-      </div>
+        <div class="user-block">
+          <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
+          <span>{{ auth.currentUser()?.profile?.role }}</span>
+        </div>
 
-      <nav class="navigation">
-        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-        <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
-        <a routerLink="/subjects" routerLinkActive="active">Subjects</a>
-      </nav>
+        <nav class="navigation">
+          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+          <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
+          <a routerLink="/subjects" routerLinkActive="active">Subjects</a>
+          @if (auth.isSuperadmin()) {
+            <a routerLink="/admin/subjects" routerLinkActive="active">Superadmin Panel</a>
+          }
+        </nav>
 
-      <button type="button" class="logout-button" (click)="logout()">Logout</button>
-    </aside>
-  }
+        <button type="button" class="logout-button" (click)="logout()">Logout</button>
+      </aside>
+    }
 
-  <main class="content" [class.content-guest]="!auth.isAuthenticated()">
-    <router-outlet />
-  </main>
-</div>
+    <main class="content" [class.content-guest]="!auth.isAuthenticated()">
+      <router-outlet />
+    </main>
+  </div>
+}

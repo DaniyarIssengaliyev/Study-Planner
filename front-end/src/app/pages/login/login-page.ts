@@ -31,7 +31,7 @@ export class LoginPage implements AfterViewInit, OnDestroy {
   errorMessage = signal<string | null>(null);
 
   form = {
-    username: '',
+    login: '',
     password: '',
   };
 
@@ -55,8 +55,8 @@ export class LoginPage implements AfterViewInit, OnDestroy {
   }
 
   submit(): void {
-    if (!this.form.username.trim() || !this.form.password.trim()) {
-      this.errorMessage.set('Enter username and password');
+    if (!this.form.login.trim() || !this.form.password.trim()) {
+      this.errorMessage.set('Введите email или username и пароль.');
       return;
     }
 
@@ -65,17 +65,20 @@ export class LoginPage implements AfterViewInit, OnDestroy {
 
     this.auth
       .login({
-        username: this.form.username.trim(),
+        login: this.form.login.trim(),
         password: this.form.password,
       })
       .subscribe({
         next: () => {
           this.isLoading.set(false);
-          this.router.navigateByUrl('/dashboard');
+          this.router.navigateByUrl(this.auth.getDefaultRoute());
         },
         error: (err) => {
-          console.error('Login error:', err);
-          this.errorMessage.set('Invalid username or password');
+          this.errorMessage.set(
+            err?.error?.detail ||
+              err?.error?.login?.[0] ||
+              'Неверный логин или пароль.',
+          );
           this.isLoading.set(false);
         },
       });
@@ -106,7 +109,7 @@ export class LoginPage implements AfterViewInit, OnDestroy {
       callback: (response: GoogleCredentialResponse) => {
         if (!response.credential) {
           this.zone.run(() => {
-            this.errorMessage.set('Google login failed');
+            this.errorMessage.set('Не удалось войти через Google.');
           });
           return;
         }
@@ -118,11 +121,12 @@ export class LoginPage implements AfterViewInit, OnDestroy {
           this.auth.googleLogin(response.credential).subscribe({
             next: () => {
               this.isLoading.set(false);
-              this.router.navigateByUrl('/dashboard');
+              this.router.navigateByUrl(this.auth.getDefaultRoute());
             },
             error: (err) => {
-              console.error('Google login error:', err);
-              this.errorMessage.set('Google login failed');
+              this.errorMessage.set(
+                err?.error?.detail || 'Не удалось войти через Google.',
+              );
               this.isLoading.set(false);
             },
           });

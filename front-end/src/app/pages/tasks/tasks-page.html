@@ -1,6 +1,7 @@
 <h2>Tasks</h2>
 
-<div *ngIf="errorMessage()">{{ errorMessage() }}</div>
+<div *ngIf="errorMessage()" class="error-message">{{ errorMessage() }}</div>
+<div *ngIf="successMessage()" class="success-message">{{ successMessage() }}</div>
 
 <div class="task-form">
   <input [(ngModel)]="newTask.title" name="title" placeholder="Title" />
@@ -25,23 +26,29 @@
     <option value="completed">Completed</option>
   </select>
 
-  <select [(ngModel)]="newTask.subject" name="subject">
+  <select [(ngModel)]="newTask.subject" name="subject" [disabled]="isLoadingSubjects()">
     <option [ngValue]="null">Select subject</option>
     @for (subject of subjects(); track subject.id) {
       <option [ngValue]="subject.id">{{ subject.name }}</option>
     }
   </select>
 
-  <button type="button" (click)="createTask()" [disabled]="subjects().length === 0">
+  <button
+    type="button"
+    (click)="createTask()"
+    [disabled]="subjects().length === 0 || isLoadingSubjects()"
+  >
     Create Task
   </button>
 </div>
 
-<p *ngIf="!isLoading() && subjects().length === 0">
-  Create at least one subject before creating tasks.
+<p *ngIf="isLoadingSubjects()">Loading subjects...</p>
+
+<p *ngIf="!isLoadingSubjects() && subjects().length === 0">
+  No subjects found. Ask superadmin to add subjects first.
 </p>
 
-<div *ngIf="!isLoading() && !errorMessage()" class="task-list">
+<div *ngIf="!isLoadingTasks()" class="task-list">
   @for (task of tasks(); track task.id) {
     <div class="task-card">
       <h3>{{ task.title }}</h3>

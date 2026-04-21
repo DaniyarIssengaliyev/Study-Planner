@@ -1,25 +1,30 @@
-<h2>Subjects</h2>
-<p>Subjects are loaded from the database.</p>
+<section class="subjects-page">
+  <header class="page-header">
+    <h2>Предметы</h2>
+    <p>Общий список предметов. Добавление доступно только superadmin.</p>
+  </header>
 
-<div *ngIf="errorMessage()">{{ errorMessage() }}</div>
+  <div *ngIf="errorMessage()" class="error-message">
+    {{ errorMessage() }}
+  </div>
 
-<div class="subject-form">
-  <input [(ngModel)]="newSubject.name" name="name" placeholder="Subject name" />
-  <textarea
-    [(ngModel)]="newSubject.description"
-    name="description"
-    placeholder="Description"
-  ></textarea>
-  <input [(ngModel)]="newSubject.color" name="color" placeholder="Color" />
-  <button type="button" (click)="createSubject()">Create Subject</button>
-</div>
+  <div *ngIf="isLoading()" class="empty-state">
+    Загрузка предметов...
+  </div>
 
-<div *ngIf="!isLoading() && !errorMessage()" class="subjects-list">
-  @for (subject of subjects(); track subject.id) {
-    <div class="subject-card">
-      <h3>{{ subject.name }}</h3>
-      <p>ID: {{ subject.id }}</p>
-      <p>{{ subject.description || 'No description' }}</p>
-    </div>
-  }
-</div>
+  <div *ngIf="!isLoading() && !errorMessage()" class="subjects-list">
+    @for (subject of subjects(); track subject.id) {
+      <article class="subject-card">
+        <div
+          class="subject-color"
+          [style.background]="subject.color || '#2563eb'"
+        ></div>
+
+        <div class="subject-content">
+          <h3>{{ subject.name }}</h3>
+          <p>{{ subject.description || 'Описание пока не добавлено.' }}</p>
+        </div>
+      </article>
+    }
+  </div>
+</section>

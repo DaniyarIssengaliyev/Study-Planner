@@ -7,6 +7,7 @@ export interface Profile {
   full_name: string;
   role: 'superadmin' | 'student';
   faculty: Faculty | null;
+  google_sub?: string | null;
 }
 
 export interface User {
@@ -37,7 +38,7 @@ export interface Task {
 }
 
 export interface LoginRequest {
-  username: string;
+  login: string;
   password: string;
 }
 
@@ -46,7 +47,6 @@ export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
-  role?: 'superadmin' | 'student';
   faculty_id?: number | null;
 }
 
