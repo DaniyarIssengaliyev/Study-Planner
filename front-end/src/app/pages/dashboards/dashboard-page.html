@@ -1,31 +1,133 @@
 <h2>Dashboard</h2>
-<p>Welcome to your Study Planner dashboard.</p>
+<p>Track task flow, subject load, and short-term study pressure.</p>
 
 <div *ngIf="errorMessage()" class="error-message">{{ errorMessage() }}</div>
 
-<div *ngIf="!isLoadingTasks() && !isLoadingSubjects()" class="dashboard-cards">
-  <div class="card">
-    <h3>Total Tasks</h3>
-    <p>{{ totalTasks() }}</p>
-  </div>
+<div *ngIf="!isLoadingTasks() && !isLoadingSubjects()" class="dashboard-layout">
+  <section class="dashboard-cards">
+    <div class="card metric-card">
+      <span class="eyebrow">Workload</span>
+      <h3>Total Tasks</h3>
+      <p>{{ totalTasks() }}</p>
+    </div>
 
-  <div class="card">
-    <h3>Completed</h3>
-    <p>{{ completedTasks() }}</p>
-  </div>
+    <div class="card metric-card">
+      <span class="eyebrow">Delivery</span>
+      <h3>Completed</h3>
+      <p>{{ completedTasks() }}</p>
+    </div>
 
-  <div class="card">
-    <h3>In Progress</h3>
-    <p>{{ inProgressTasks() }}</p>
-  </div>
+    <div class="card metric-card">
+      <span class="eyebrow">Focus</span>
+      <h3>In Progress</h3>
+      <p>{{ inProgressTasks() }}</p>
+    </div>
 
-  <div class="card">
-    <h3>Overdue</h3>
-    <p>{{ overdueTasks() }}</p>
-  </div>
+    <div class="card metric-card danger">
+      <span class="eyebrow">Risk</span>
+      <h3>Overdue</h3>
+      <p>{{ overdueTasks() }}</p>
+    </div>
 
-  <div class="card">
-    <h3>Subjects</h3>
-    <p>{{ totalSubjects() }}</p>
-  </div>
+    <div class="card metric-card">
+      <span class="eyebrow">Coverage</span>
+      <h3>Subjects</h3>
+      <p>{{ totalSubjects() }}</p>
+    </div>
+
+    <div class="card metric-card accent">
+      <span class="eyebrow">Execution</span>
+      <h3>Completion Rate</h3>
+      <p>{{ completionRate() }}%</p>
+    </div>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="card chart-card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Status Split</span>
+          <h3>Task Distribution</h3>
+        </div>
+        <strong>{{ totalTasks() }}</strong>
+      </div>
+
+      <div class="status-chart-wrap">
+        <div class="donut-chart" [style.background]="statusChartStyle()">
+          <div class="donut-center">
+            <span>{{ completionRate() }}%</span>
+            <small>done</small>
+          </div>
+        </div>
+
+        <div class="status-legend">
+          <div class="legend-item" *ngFor="let slice of statusBreakdown()">
+            <span class="legend-dot" [style.background]="slice.color"></span>
+            <span class="legend-label">{{ slice.label }}</span>
+            <strong>{{ slice.value }}</strong>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card chart-card">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Deadline Pressure</span>
+          <h3>Next 7 Days</h3>
+        </div>
+        <strong>{{ maxDeadlineValue() }}</strong>
+      </div>
+
+      <div class="deadline-chart">
+        <div class="deadline-bar-group" *ngFor="let bucket of deadlineBuckets()">
+          <span class="deadline-count">{{ bucket.value }}</span>
+          <div
+            class="deadline-bar"
+            [style.height]="chartBarHeight(bucket.value, maxDeadlineValue())"
+          ></div>
+          <span class="deadline-label">{{ bucket.shortLabel }}</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="card chart-card wide">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Subject Load</span>
+          <h3>Tasks by Subject</h3>
+        </div>
+        <strong>Top {{ subjectLoad().length }}</strong>
+      </div>
+
+      <div class="subject-chart" *ngIf="subjectLoad().length > 0; else emptySubjects">
+        <div class="subject-row" *ngFor="let item of subjectLoad()">
+          <div class="subject-meta">
+            <span>{{ item.name }}</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+          <div class="subject-track">
+            <div
+              class="subject-fill"
+              [style.width]="chartBarWidth(item.value, maxSubjectLoadValue())"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card insights-card">
+      <span class="eyebrow">Progress Health</span>
+      <h3>Average Task Progress</h3>
+      <div class="insight-value">{{ averageProgress() }}%</div>
+      <div class="mini-progress">
+        <span [style.width.%]="averageProgress()"></span>
+      </div>
+      <p>{{ completedThisWeek() }} tasks completed in the last 7 days.</p>
+    </article>
+  </section>
 </div>
+
+<ng-template #emptySubjects>
+  <p class="empty-state">Create tasks to populate subject-level statistics.</p>
+</ng-template>

@@ -3,6 +3,26 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 import { Subject, Task } from '../../models/api.models';
 
+type TaskStatusKey = 'todo' | 'in_progress' | 'completed' | 'overdue';
+
+interface ChartSlice {
+  key: TaskStatusKey;
+  label: string;
+  value: number;
+  color: string;
+}
+
+interface SubjectLoadItem {
+  name: string;
+  value: number;
+}
+
+interface DailyBucket {
+  label: string;
+  shortLabel: string;
+  value: number;
+}
+
 @Component({
   selector: 'app-dashboard-page',
   imports: [CommonModule],
@@ -30,6 +50,123 @@ export class DashboardPage implements OnInit {
     () => this.tasks().filter((task) => task.status === 'overdue').length,
   );
   totalSubjects = computed(() => this.subjects().length);
+  averageProgress = computed(() => {
+    const tasks = this.tasks();
+    if (tasks.length === 0) {
+      return 0;
+    }
+
+    const total = tasks.reduce((sum, task) => sum + this.progressPercentage(task), 0);
+    return Math.round(total / tasks.length);
+  });
+  completionRate = computed(() => {
+    const total = this.totalTasks();
+    if (total === 0) {
+      return 0;
+    }
+
+    return Math.round((this.completedTasks() / total) * 100);
+  });
+  statusBreakdown = computed<ChartSlice[]>(() => [
+    {
+      key: 'todo',
+      label: 'To Do',
+      value: this.tasks().filter((task) => task.status === 'todo').length,
+      color: '#f59e0b',
+    },
+    {
+      key: 'in_progress',
+      label: 'In Progress',
+      value: this.inProgressTasks(),
+      color: '#3b82f6',
+    },
+    {
+      key: 'completed',
+      label: 'Completed',
+      value: this.completedTasks(),
+      color: '#10b981',
+    },
+    {
+      key: 'overdue',
+      label: 'Overdue',
+      value: this.overdueTasks(),
+      color: '#ef4444',
+    },
+  ]);
+  statusChartStyle = computed(() => {
+    const total = this.totalTasks();
+    if (total === 0) {
+      return 'conic-gradient(#e5e7eb 0deg 360deg)';
+    }
+
+    let currentAngle = 0;
+    const segments = this.statusBreakdown().map((slice) => {
+      const angle = (slice.value / total) * 360;
+      const start = currentAngle;
+      const end = currentAngle + angle;
+      currentAngle = end;
+      return `${slice.color} ${start}deg ${end}deg`;
+    });
+
+    return `conic-gradient(${segments.join(', ')})`;
+  });
+  subjectLoad = computed<SubjectLoadItem[]>(() => {
+    const subjectsById = new Map(this.subjects().map((subject) => [subject.id, subject.name]));
+    const counts = new Map<string, number>();
+
+    for (const task of this.tasks()) {
+      const subjectName =
+        task.subject_name?.trim() || subjectsById.get(task.subject) || `Subject #${task.subject}`;
+      counts.set(subjectName, (counts.get(subjectName) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name))
+      .slice(0, 6);
+  });
+  deadlineBuckets = computed<DailyBucket[]>(() => {
+    const startOfToday = this.startOfDay(new Date());
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(startOfToday);
+      date.setDate(startOfToday.getDate() + index);
+
+      const value = this.tasks().filter((task) => {
+        if (task.status === 'completed') {
+          return false;
+        }
+
+        const dueDate = new Date(task.due_date);
+        return !Number.isNaN(dueDate.getTime()) && this.isSameDay(dueDate, date);
+      }).length;
+
+      return {
+        label: new Intl.DateTimeFormat('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+        }).format(date),
+        shortLabel: new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
+        value,
+      };
+    });
+  });
+  completedThisWeek = computed(() => {
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 6);
+    weekAgo.setHours(0, 0, 0, 0);
+
+    return this.tasks().filter((task) => {
+      if (!task.completed_at) {
+        return false;
+      }
+
+      const completedAt = new Date(task.completed_at);
+      return !Number.isNaN(completedAt.getTime()) && completedAt >= weekAgo;
+    }).length;
+  });
 
   ngOnInit(): void {
     this.loadTasks();
@@ -70,5 +207,58 @@ export class DashboardPage implements OnInit {
         this.isLoadingSubjects.set(false);
       },
     });
+  }
+
+  chartBarHeight(value: number, max: number): string {
+    if (max <= 0) {
+      return '10%';
+    }
+
+    return `${Math.max(10, Math.round((value / max) * 100))}%`;
+  }
+
+  chartBarWidth(value: number, max: number): string {
+    if (max <= 0) {
+      return '0%';
+    }
+
+    return `${Math.round((value / max) * 100)}%`;
+  }
+
+  maxDeadlineValue(): number {
+    return Math.max(...this.deadlineBuckets().map((bucket) => bucket.value), 0);
+  }
+
+  maxSubjectLoadValue(): number {
+    return Math.max(...this.subjectLoad().map((item) => item.value), 0);
+  }
+
+  progressPercentage(task: Task): number {
+    if (typeof task.progress_percentage === 'number') {
+      return task.progress_percentage;
+    }
+
+    const total = task.total_subtasks_count ?? task.subtasks?.length ?? 0;
+    if (total === 0) {
+      return task.status === 'completed' ? 100 : 0;
+    }
+
+    const completed =
+      task.completed_subtasks_count ?? task.subtasks?.filter((item) => item.is_completed).length ?? 0;
+    return Math.round((completed / total) * 100);
+  }
+
+  private startOfDay(value: Date): Date {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  private isSameDay(left: Date, right: Date): boolean {
+    return (
+      left.getFullYear() === right.getFullYear() &&
+      left.getMonth() === right.getMonth() &&
+      left.getDate() === right.getDate()
+    );
   }
 }
