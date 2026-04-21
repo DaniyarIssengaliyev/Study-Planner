@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import {
   Board,
+  CreateFacultyRequest,
   CreateBoardRequest,
   CreateSubjectRequest,
   CreateSubtaskRequest,
@@ -11,6 +12,7 @@ import {
   LoginResponse,
   RegisterRequest,
   Subject,
+  StudentSummary,
   Subtask,
   Task,
   UpdateBoardRequest,
@@ -59,6 +61,18 @@ export class ApiService {
 
   getFaculties(): Observable<Faculty[]> {
     return this.http.get<Faculty[]>(`${this.baseUrl}/faculties/`);
+  }
+
+  createFaculty(data: CreateFacultyRequest): Observable<Faculty> {
+    return this.http.post<Faculty>(`${this.baseUrl}/faculties/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  deleteFaculty(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/faculties/${id}/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   getBoards(): Observable<Board[]> {
@@ -142,6 +156,12 @@ export class ApiService {
 
   getSubjects(): Observable<Subject[]> {
     return this.http.get<Subject[]>(`${this.baseUrl}/subjects/`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  getStudentSummary(): Observable<StudentSummary[]> {
+    return this.http.get<StudentSummary[]>(`${this.baseUrl}/students/summary/`, {
       headers: this.getAuthHeaders(),
     });
   }

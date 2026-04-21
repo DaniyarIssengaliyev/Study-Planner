@@ -3,6 +3,10 @@ export interface Faculty {
   name: string;
 }
 
+export interface CreateFacultyRequest {
+  name: string;
+}
+
 export interface Profile {
   full_name: string;
   role: 'superadmin' | 'student';
@@ -34,6 +38,17 @@ export interface Board {
   created_at: string;
   tasks_count?: number;
   completed_tasks_count?: number;
+}
+
+export interface StudentSummary {
+  id: number;
+  username: string;
+  full_name: string;
+  faculty_name?: string | null;
+  boards_count: number;
+  tasks_count: number;
+  completed_tasks_count: number;
+  overdue_tasks_count: number;
 }
 
 export interface Subtask {

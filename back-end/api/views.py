@@ -2,7 +2,8 @@ import secrets
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Count
+from django.db import models
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from google.auth.transport import requests as google_requests
@@ -26,6 +27,7 @@ from .serializers import (
     StudySessionModelSerializer,
     SubjectModelSerializer,
     SubjectSummarySerializer,
+    StudentSummarySerializer,
     SubtaskSerializer,
     TaskModelSerializer,
     TaskSimpleSerializer,
@@ -40,14 +42,10 @@ def get_user_role(user):
 
 
 def get_board_queryset_for_user(user):
-    if get_user_role(user) == 'superadmin':
-        return Board.objects.all().select_related('subject', 'owner')
     return Board.objects.filter(owner=user).select_related('subject', 'owner')
 
 
 def get_task_queryset_for_user(user):
-    if get_user_role(user) == 'superadmin':
-        return Task.objects.all().select_related('subject', 'owner', 'board').prefetch_related('subtasks', 'activity_log')
     return Task.objects.filter(owner=user).select_related('subject', 'owner', 'board').prefetch_related('subtasks', 'activity_log')
 
 
@@ -56,9 +54,6 @@ def get_task_for_user(request, pk):
         Task.objects.select_related('subject', 'owner', 'board').prefetch_related('subtasks', 'activity_log'),
         pk=pk,
     )
-
-    if get_user_role(request.user) == 'superadmin':
-        return task
 
     if task.owner_id != request.user.id:
         return None
@@ -69,13 +64,49 @@ def get_task_for_user(request, pk):
 def get_board_for_user(request, pk):
     board = get_object_or_404(Board.objects.select_related('subject', 'owner'), pk=pk)
 
-    if get_user_role(request.user) == 'superadmin':
-        return board
-
     if board.owner_id != request.user.id:
         return None
 
     return board
+
+
+@api_view(['GET'])
+def student_summary(request):
+    if get_user_role(request.user) != 'superadmin':
+        return Response({'detail': 'Only superadmin can view student statistics.'}, status=status.HTTP_403_FORBIDDEN)
+
+    students = (
+        User.objects.filter(is_superuser=False, profile__role='student')
+        .select_related('profile__faculty')
+        .annotate(
+            boards_count=Count('boards', distinct=True),
+            tasks_count=Count('tasks', distinct=True),
+            completed_tasks_count=Count('tasks', filter=Q(tasks__status='completed'), distinct=True),
+            overdue_tasks_count=Count(
+                'tasks',
+                filter=Q(tasks__status='overdue') | Q(tasks__status='completed', tasks__completed_at__gt=models.F('tasks__due_date')),
+                distinct=True,
+            ),
+        )
+        .order_by('profile__full_name', 'username')
+    )
+
+    data = [
+        {
+            'id': student.id,
+            'username': student.username,
+            'full_name': student.profile.full_name,
+            'faculty_name': student.profile.faculty.name if student.profile.faculty else None,
+            'boards_count': student.boards_count,
+            'tasks_count': student.tasks_count,
+            'completed_tasks_count': student.completed_tasks_count,
+            'overdue_tasks_count': student.overdue_tasks_count,
+        }
+        for student in students
+    ]
+
+    serializer = StudentSummarySerializer(data, many=True)
+    return Response(serializer.data)
 
 
 class RegisterAPIView(APIView):
@@ -182,6 +213,34 @@ class FacultyListAPIView(APIView):
         faculties = Faculty.objects.all().order_by('name')
         serializer = FacultySerializer(faculties, many=True)
         return Response(serializer.data)
+
+    def post(self, request):
+        if not request.user.is_authenticated or get_user_role(request.user) != 'superadmin':
+            return Response(
+                {'detail': 'Only superadmin can add faculties.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = FacultySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FacultyDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        if get_user_role(request.user) != 'superadmin':
+            return Response(
+                {'detail': 'Only superadmin can delete faculties.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        faculty = get_object_or_404(Faculty, pk=pk)
+        faculty.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BoardListCreateAPIView(APIView):
@@ -319,6 +378,12 @@ class TaskListCreateAPIView(APIView):
     def post(self, request):
         serializer = TaskModelSerializer(data=request.data)
         if serializer.is_valid():
+            board = serializer.validated_data.get('board')
+            if board and board.owner_id != request.user.id:
+                return Response(
+                    {'detail': 'You can only attach tasks to your own boards.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer.save(owner=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -346,6 +411,12 @@ class TaskDetailAPIView(APIView):
         previous_status = task.status
         serializer = TaskModelSerializer(task, data=request.data)
         if serializer.is_valid():
+            board = serializer.validated_data.get('board')
+            if board and board.owner_id != request.user.id:
+                return Response(
+                    {'detail': 'You can only attach tasks to your own boards.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             updated_task = serializer.save(owner=task.owner)
 
             if previous_status != updated_task.status:

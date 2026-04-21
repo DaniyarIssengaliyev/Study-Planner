@@ -23,17 +23,19 @@
     <section class="boards-grid">
       @for (board of visibleBoards(); track board.id) {
         <article class="board-card" (click)="selectBoard(board.id)">
-          <div class="board-card-head">
+          <div class="board-card-top">
             <h4>{{ board.title }}</h4>
-            <span>{{ board.subject_name || 'General' }}</span>
+            <span>{{ board.subject_name || 'General board' }}</span>
           </div>
-
-          <p>{{ board.description || 'No description' }}</p>
 
           <div class="board-stats">
             <span>Tasks: {{ board.tasks_count ?? 0 }}</span>
             <span>Done: {{ board.completed_tasks_count ?? 0 }}</span>
-            <span>Progress: {{ boardProgress(board) }}%</span>
+          </div>
+
+          <div class="board-progress-line">
+            <strong>Progress</strong>
+            <span>{{ boardProgress(board) }}%</span>
           </div>
         </article>
       }
@@ -44,7 +46,10 @@
     <section class="board-analytics">
       <div class="analytics-head">
         <div class="analytics-title-row">
-          <button class="ghost-button" type="button" (click)="clearBoardSelection()">Back</button>
+          <button class="ghost-button back-button" type="button" (click)="clearBoardSelection()">
+            <span class="back-arrow" aria-hidden="true">&#8592;</span>
+            <span>Back</span>
+          </button>
           <h3>{{ board.title }}</h3>
         </div>
 
@@ -129,43 +134,7 @@
             </div>
           </div>
         </article>
-
-        <article class="card chart-card wide">
-          <div class="section-head">
-            <div>
-              <h3>Tasks by Subject</h3>
-            </div>
-            <strong>Top {{ subjectLoad().length }}</strong>
-          </div>
-
-          <div class="subject-chart" *ngIf="subjectLoad().length > 0; else emptySubjects">
-            <div class="subject-row" *ngFor="let item of subjectLoad()">
-              <div class="subject-meta">
-                <span>{{ item.name }}</span>
-                <strong>{{ item.value }}</strong>
-              </div>
-              <div class="subject-track">
-                <div
-                  class="subject-fill"
-                  [style.width]="chartBarWidth(item.value, maxSubjectLoadValue())"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="card insights-card">
-          <h3>Average Task Progress</h3>
-          <div class="insight-value">{{ averageProgress() }}%</div>
-          <div class="mini-progress">
-            <span [style.width.%]="averageProgress()"></span>
-          </div>
-        </article>
       </section>
     </section>
   }
 </div>
-
-<ng-template #emptySubjects>
-  <p class="empty-state">Create tasks to populate subject-level statistics.</p>
-</ng-template>

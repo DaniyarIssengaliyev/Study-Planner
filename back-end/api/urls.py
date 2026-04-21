@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     BoardDetailAPIView,
     BoardListCreateAPIView,
+    FacultyDetailAPIView,
     FacultyListAPIView,
     GoogleLoginAPIView,
     LoginAPIView,
@@ -16,6 +17,7 @@ from .views import (
     SubtaskListCreateAPIView,
     TaskDetailAPIView,
     TaskListCreateAPIView,
+    student_summary,
     subject_summary,
     task_list_simple,
 )
@@ -27,12 +29,14 @@ urlpatterns = [
     path('auth/me/', MeAPIView.as_view(), name='me'),
 
     path('faculties/', FacultyListAPIView.as_view(), name='faculty-list'),
+    path('faculties/<int:pk>/', FacultyDetailAPIView.as_view(), name='faculty-detail'),
 
     path('boards/', BoardListCreateAPIView.as_view(), name='board-list-create'),
     path('boards/<int:pk>/', BoardDetailAPIView.as_view(), name='board-detail'),
 
     path('tasks/simple/', task_list_simple, name='task-list-simple'),
     path('subjects/summary/', subject_summary, name='subject-summary'),
+    path('students/summary/', student_summary, name='student-summary'),
 
     path('subjects/', SubjectListCreateAPIView.as_view(), name='subject-list-create'),
     path('subjects/<int:pk>/', SubjectDetailAPIView.as_view(), name='subject-detail'),

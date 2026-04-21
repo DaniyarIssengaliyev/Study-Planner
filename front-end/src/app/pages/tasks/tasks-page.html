@@ -23,8 +23,6 @@
               <span>{{ board.subject_name || 'General' }}</span>
             </div>
 
-            <p>{{ board.description || 'No description' }}</p>
-
             <div class="board-tile-stats">
               <span>{{ board.tasks_count ?? 0 }} tasks</span>
               <span>{{ board.completed_tasks_count ?? 0 }} done</span>
@@ -48,7 +46,10 @@
         <div>
           <div class="selected-board-back">
             @if (hideBoardsList()) {
-              <button class="ghost-button" type="button" (click)="showBoardsList()">Back</button>
+              <button class="ghost-button back-button" type="button" (click)="showBoardsList()">
+                <span class="back-arrow" aria-hidden="true">&#8592;</span>
+                <span>Back</span>
+              </button>
             }
             <h3>{{ board.title }}</h3>
           </div>
@@ -57,6 +58,20 @@
 
         <div class="selected-board-actions">
           <button class="primary-button" type="button" (click)="openCreateModal()">New Task</button>
+          <button
+            class="icon-danger-button"
+            type="button"
+            (click)="deleteBoard(board.id)"
+            aria-label="Delete board"
+            title="Delete board"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -100,8 +115,6 @@
                     </span>
                   </div>
 
-                  <p class="task-description">{{ task.description || 'No description' }}</p>
-
                   <div class="task-meta">
                     <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
                     <span>{{ formatDueDate(task.due_date) }}</span>
@@ -127,7 +140,10 @@
     <section class="boards-empty-state">
       <p>Board not found.</p>
       <div class="selected-board-actions">
-        <button class="ghost-button" type="button" (click)="showBoardsList()">Back</button>
+        <button class="ghost-button back-button" type="button" (click)="showBoardsList()">
+          <span class="back-arrow" aria-hidden="true">&#8592;</span>
+          <span>Back</span>
+        </button>
       </div>
     </section>
   }
@@ -137,10 +153,16 @@
   <div class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Create Board</h3>
-      <button type="button" class="icon-button" (click)="closeBoardModal()">×</button>
+      <button type="button" class="icon-button" (click)="closeBoardModal()" aria-label="Close">
+        &times;
+      </button>
     </div>
 
     <div class="modal-form">
+      <div *ngIf="boardErrorMessage()" class="message error-message modal-message">
+        {{ boardErrorMessage() }}
+      </div>
+
       <label>
         <span>Title</span>
         <input
@@ -180,10 +202,16 @@
   <div class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Create Task</h3>
-      <button type="button" class="icon-button" (click)="closeCreateModal()">×</button>
+      <button type="button" class="icon-button" (click)="closeCreateModal()" aria-label="Close">
+        &times;
+      </button>
     </div>
 
     <div class="modal-form">
+      <div *ngIf="createErrorMessage()" class="message error-message modal-message">
+        {{ createErrorMessage() }}
+      </div>
+
       <label>
         <span>Title</span>
         <input
@@ -268,3 +296,191 @@
     </div>
   </div>
 </div>
+
+<div *ngIf="isTaskModalOpen()" class="modal-backdrop" (click)="closeTaskDetails()">
+  <div class="modal-card modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Task Details</h3>
+      <button type="button" class="icon-button" (click)="closeTaskDetails()" aria-label="Close">
+        &times;
+      </button>
+    </div>
+
+    <div class="task-modal-layout">
+      <div class="modal-form">
+        <div *ngIf="taskErrorMessage()" class="message error-message modal-message">
+          {{ taskErrorMessage() }}
+        </div>
+
+        <label>
+          <span>Title</span>
+          <input [(ngModel)]="taskForm.title" name="task_title" type="text" />
+        </label>
+
+        <label>
+          <span>Description</span>
+          <textarea [(ngModel)]="taskForm.description" name="task_description"></textarea>
+        </label>
+
+        <div class="modal-grid">
+          <label>
+            <span>Due date</span>
+            <input [(ngModel)]="taskForm.due_date" name="task_due_date" type="datetime-local" />
+          </label>
+
+          <label>
+            <span>Priority</span>
+            <select [(ngModel)]="taskForm.priority" name="task_priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            <span>Subject</span>
+            <select [(ngModel)]="taskForm.subject" name="task_subject">
+              @for (subject of subjects(); track subject.id) {
+                <option [ngValue]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Board</span>
+            <select [(ngModel)]="taskForm.board" name="task_board">
+              <option [ngValue]="null">Select board</option>
+              @for (board of availableBoardsForSubject(taskForm.subject); track board.id) {
+                <option [ngValue]="board.id">{{ board.title }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>Status</span>
+          <select [(ngModel)]="taskForm.status" name="task_status">
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </label>
+
+        @if (selectedTask(); as task) {
+          <div class="task-extra-meta">
+            <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
+            <span>{{ formatDueDate(task.due_date) }}</span>
+            <span>{{ deadlineCountdown(task) }}</span>
+            <span *ngIf="subtaskCount(task) > 0">
+              {{ completedSubtasks(task) }}/{{ subtaskCount(task) }} subtasks
+            </span>
+          </div>
+
+          <div class="modal-actions modal-actions-left">
+            <button
+              type="button"
+              class="primary-button"
+              (click)="saveTaskDetails()"
+              [disabled]="isSaving()"
+            >
+              {{ isSaving() ? 'Saving...' : 'Save changes' }}
+            </button>
+            <button
+              type="button"
+              class="icon-danger-button"
+              (click)="deleteTask(task.id)"
+              aria-label="Delete task"
+              title="Delete task"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+
+      <aside class="subtasks-panel">
+        @if (selectedTask(); as task) {
+          <div class="subtasks-header">
+            <h4>Subtasks</h4>
+            <span>{{ progressPercentage(task) }}%</span>
+          </div>
+
+          <div class="subtask-create">
+            <input
+              [(ngModel)]="newSubtaskTitle"
+              name="new_subtask_title"
+              type="text"
+              placeholder="Add subtask"
+            />
+            <button type="button" class="primary-button" (click)="addSubtask()">Add</button>
+          </div>
+
+          <div class="subtasks-progress" *ngIf="subtaskCount(task) > 0">
+            <div class="subtasks-progress-head">
+              <span>Progress</span>
+              <strong>{{ progressPercentage(task) }}%</strong>
+            </div>
+            <div class="subtasks-progress-bar">
+              <span [style.width.%]="progressPercentage(task)"></span>
+            </div>
+          </div>
+
+          <div class="subtask-list" *ngIf="(task.subtasks?.length ?? 0) > 0; else emptySubtasks">
+            @for (subtask of task.subtasks ?? []; track subtask.id) {
+              <div class="subtask-item">
+                <label class="subtask-check">
+                  <input
+                    type="checkbox"
+                    [checked]="subtask.is_completed"
+                    (change)="toggleSubtask(subtask, $any($event.target).checked)"
+                  />
+                  <span [class.done]="subtask.is_completed">{{ subtask.title }}</span>
+                </label>
+                <button
+                  type="button"
+                  class="icon-danger-button subtask-delete"
+                  (click)="deleteSubtask(subtask.id)"
+                  aria-label="Delete subtask"
+                  title="Delete subtask"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                    <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="history-block">
+            <h4>Activity</h4>
+
+            <div *ngIf="historyEntries(task).length === 0" class="empty-subtasks">
+              No activity yet
+            </div>
+
+            @for (entry of historyEntries(task); track entry.id) {
+              <div class="history-item">
+                <strong>{{ entry.message }}</strong>
+                <span>{{ formatHistoryDate(entry.created_at) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </aside>
+    </div>
+  </div>
+</div>
+
+<ng-template #emptySubtasks>
+  <div class="empty-subtasks">No subtasks yet</div>
+</ng-template>

@@ -12,8 +12,47 @@
         <h1>Study Planner</h1>
 
         <div class="user-block">
-          <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
-          <span>{{ auth.currentUser()?.profile?.role }}</span>
+          <div class="user-block-head">
+            <div class="user-copy">
+              <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
+              <span>{{ auth.currentUser()?.profile?.role }}</span>
+            </div>
+
+            <button
+              type="button"
+              class="logout-icon-button"
+              (click)="logout()"
+              aria-label="Logout"
+              title="Logout"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M14 8l4 4-4 4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M18 12H9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <nav class="navigation">
@@ -24,8 +63,6 @@
             <a routerLink="/admin/subjects" routerLinkActive="active">Superadmin Panel</a>
           }
         </nav>
-
-        <button type="button" class="logout-button" (click)="logout()">Logout</button>
       </aside>
     }
 

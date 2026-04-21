@@ -33,6 +33,8 @@ export class TasksPage implements OnInit, OnDestroy {
 
   pageErrorMessage = signal<string | null>(null);
   taskErrorMessage = signal<string | null>(null);
+  createErrorMessage = signal<string | null>(null);
+  boardErrorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
   currentTime = signal(new Date());
 
@@ -188,6 +190,30 @@ export class TasksPage implements OnInit, OnDestroy {
     this.router.navigate(['/tasks']);
   }
 
+  deleteBoard(boardId: number): void {
+    const board = this.boards().find((item) => item.id === boardId);
+    const confirmed = window.confirm(
+      `Delete board "${board?.title ?? 'this board'}"? All related tasks will also be removed.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.api.deleteBoard(boardId).subscribe({
+      next: () => {
+        this.boards.update((current) => current.filter((item) => item.id !== boardId));
+        if (this.selectedBoardId() === boardId) {
+          this.router.navigate(['/tasks']);
+        }
+        this.successMessage.set('Board deleted.');
+      },
+      error: (err) => {
+        this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to delete board.');
+      },
+    });
+  }
+
   currentBoard(): Board | null {
     const boardId = this.selectedBoardId();
     return this.boards().find((item) => item.id === boardId) ?? null;
@@ -208,21 +234,22 @@ export class TasksPage implements OnInit, OnDestroy {
   openBoardModal(): void {
     this.boardForm = this.getEmptyBoardForm();
     this.boardValidationTriggered = false;
+    this.boardErrorMessage.set(null);
     this.isBoardModalOpen.set(true);
   }
 
   closeBoardModal(): void {
     this.boardValidationTriggered = false;
+    this.boardErrorMessage.set(null);
     this.isBoardModalOpen.set(false);
   }
 
   createBoard(): void {
     this.boardValidationTriggered = true;
-    this.pageErrorMessage.set(null);
+    this.boardErrorMessage.set(null);
     this.successMessage.set(null);
 
     if (!this.boardForm.title.trim()) {
-      this.pageErrorMessage.set('Enter board title.');
       return;
     }
 
@@ -250,7 +277,7 @@ export class TasksPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.isSaving.set(false);
-          this.pageErrorMessage.set(
+          this.boardErrorMessage.set(
             this.extractErrorMessage(err?.error) || 'Failed to create board.',
           );
         },
@@ -263,37 +290,35 @@ export class TasksPage implements OnInit, OnDestroy {
     this.createForm.subject = currentBoard?.subject ?? this.subjects()[0]?.id ?? null;
     this.createForm.board = currentBoard?.id ?? null;
     this.createValidationTriggered = false;
+    this.createErrorMessage.set(null);
     this.isCreateModalOpen.set(true);
     this.successMessage.set(null);
   }
 
   closeCreateModal(): void {
     this.createValidationTriggered = false;
+    this.createErrorMessage.set(null);
     this.isCreateModalOpen.set(false);
   }
 
   createTask(): void {
     this.successMessage.set(null);
-    this.pageErrorMessage.set(null);
+    this.createErrorMessage.set(null);
     this.createValidationTriggered = true;
 
     if (!this.createForm.title.trim()) {
-      this.pageErrorMessage.set('Enter task title.');
       return;
     }
 
     if (!this.createForm.due_date) {
-      this.pageErrorMessage.set('Select due date.');
       return;
     }
 
     if (!this.createForm.subject) {
-      this.pageErrorMessage.set('Select subject.');
       return;
     }
 
     if (!this.createForm.board) {
-      this.pageErrorMessage.set('Select board.');
       return;
     }
 
@@ -320,7 +345,7 @@ export class TasksPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.isSaving.set(false);
-          this.pageErrorMessage.set(
+          this.createErrorMessage.set(
             this.extractErrorMessage(err?.error) || 'Failed to create task.',
           );
         },
@@ -574,7 +599,7 @@ export class TasksPage implements OnInit, OnDestroy {
   }
 
   historyEntries(task: Task | null): TaskActivity[] {
-    return task?.activity_log ?? [];
+    return (task?.activity_log ?? []).slice(0, 5);
   }
 
   formatDueDate(dueDate: string): string {

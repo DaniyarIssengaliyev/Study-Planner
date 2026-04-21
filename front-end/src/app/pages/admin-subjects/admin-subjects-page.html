@@ -1,7 +1,7 @@
 <section class="admin-page">
   <header class="page-header">
-    <h2>Панель Superadmin</h2>
-    <p>Здесь можно добавлять и удалять предметы.</p>
+    <h2>Superadmin Panel</h2>
+    <p>Open a section to manage subjects, faculties, or student statistics.</p>
   </header>
 
   <div *ngIf="errorMessage()" class="error-message">
@@ -12,50 +12,232 @@
     {{ successMessage() }}
   </div>
 
-  <section class="form-card">
-    <h3>Новый предмет</h3>
-
-    <label class="field-label">
-      <span>Название *</span>
-      <input [(ngModel)]="newSubject.name" name="name" placeholder="Например, Databases" />
-    </label>
-
-    <label class="field-label">
-      <span>Описание</span>
-      <textarea
-        [(ngModel)]="newSubject.description"
-        name="description"
-        placeholder="Краткое описание предмета"
-      ></textarea>
-    </label>
-
-    <label class="field-label">
-      <span>Цвет</span>
-      <input [(ngModel)]="newSubject.color" name="color" placeholder="#2563eb" />
-    </label>
-
-    <button type="button" (click)="createSubject()">Добавить предмет</button>
-  </section>
-
-  <section class="subjects-list" *ngIf="!isLoading()">
-    <article class="subject-card" *ngFor="let subject of subjects()">
-      <div
-        class="subject-color"
-        [style.background]="subject.color || '#2563eb'"
-      ></div>
-
-      <div class="subject-content">
-        <h3>{{ subject.name }}</h3>
-        <p>{{ subject.description || 'Описание пока не добавлено.' }}</p>
-      </div>
-
-      <button
-        type="button"
-        class="delete-button"
-        (click)="deleteSubject(subject)"
-      >
-        Удалить
-      </button>
-    </article>
+  <section class="tabs-card">
+    <button type="button" class="tab-button" (click)="openTab('subjects')">Subjects</button>
+    <button type="button" class="tab-button" (click)="openTab('faculties')">Faculties</button>
+    <button type="button" class="tab-button" (click)="openTab('students')">Students</button>
   </section>
 </section>
+
+<div *ngIf="activeTab()" class="modal-backdrop" (click)="closeTab()">
+  <div class="modal-card modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        @if (activeTab() === 'subjects') {
+          Subjects
+        }
+        @if (activeTab() === 'faculties') {
+          Faculties
+        }
+        @if (activeTab() === 'students') {
+          Students
+        }
+      </h3>
+      <button type="button" class="icon-button" (click)="closeTab()" aria-label="Close">
+        &times;
+      </button>
+    </div>
+
+    <div class="panel-content">
+      @if (activeTab() === 'subjects') {
+        <section class="panel-toolbar">
+          <div>
+            <h4>Subject List</h4>
+            <p>Manage all study subjects here.</p>
+          </div>
+          <button type="button" class="open-modal-button" (click)="openSubjectModal()">
+            Add subject
+          </button>
+        </section>
+
+        <section class="subjects-list" *ngIf="!isLoading()">
+          <article class="subject-card" *ngFor="let subject of subjects()">
+            <div class="subject-color" [style.background]="subject.color || '#2563eb'"></div>
+
+            <div class="subject-content">
+              <h3>{{ subject.name }}</h3>
+              <p>{{ subject.description || 'No description yet.' }}</p>
+            </div>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteSubject(subject)"
+              aria-label="Delete subject"
+              title="Delete subject"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </article>
+        </section>
+      }
+
+      @if (activeTab() === 'faculties') {
+        <section class="panel-toolbar">
+          <div>
+            <h4>Faculty List</h4>
+            <p>Manage all faculties here.</p>
+          </div>
+          <button type="button" class="open-modal-button" (click)="openFacultyModal()">
+            Add faculty
+          </button>
+        </section>
+
+        <section class="faculties-list" *ngIf="!isLoadingFaculties()">
+          <article class="faculty-card" *ngFor="let faculty of faculties()">
+            <div class="faculty-content">
+              <h3>{{ faculty.name }}</h3>
+            </div>
+
+            <button
+              type="button"
+              class="delete-button"
+              (click)="deleteFaculty(faculty)"
+              aria-label="Delete faculty"
+              title="Delete faculty"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </article>
+        </section>
+      }
+
+      @if (activeTab() === 'students') {
+        <section class="students-panel">
+          <div class="students-panel-head">
+            <div>
+              <h4>Students</h4>
+              <p>Short statistics by student.</p>
+            </div>
+
+            <div class="students-toolbar">
+              <label class="field-label">
+                <span>Faculty</span>
+                <select
+                  [ngModel]="studentFacultyFilter()"
+                  (ngModelChange)="studentFacultyFilter.set($event)"
+                  name="student_faculty_filter"
+                >
+                  <option value="all">All faculties</option>
+                  <option value="No faculty">No faculty</option>
+                  @for (faculty of faculties(); track faculty.id) {
+                    <option [value]="faculty.name">{{ faculty.name }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div *ngIf="isLoadingStudents()" class="empty-state">Loading student statistics...</div>
+
+          <div class="students-list" *ngIf="!isLoadingStudents()">
+            <article class="student-card" *ngFor="let student of filteredStudents()">
+              <div class="student-head">
+                <div>
+                  <h4>{{ student.full_name }}</h4>
+                  <span>@{{ student.username }}</span>
+                </div>
+                <span class="student-faculty">{{ student.faculty_name || 'No faculty' }}</span>
+              </div>
+
+              <div class="student-stats">
+                <span>Boards: {{ student.boards_count }}</span>
+                <span>Tasks: {{ student.tasks_count }}</span>
+                <span>Done: {{ student.completed_tasks_count }}</span>
+                <span>Overdue: {{ student.overdue_tasks_count }}</span>
+              </div>
+            </article>
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isSubjectModalOpen()" class="modal-backdrop" (click)="closeSubjectModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Create Subject</h3>
+      <button type="button" class="icon-button" (click)="closeSubjectModal()" aria-label="Close">
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-form">
+      <div *ngIf="createErrorMessage()" class="error-message form-message">
+        {{ createErrorMessage() }}
+      </div>
+
+      <label class="field-label">
+        <span>Name *</span>
+        <input
+          [(ngModel)]="newSubject.name"
+          name="name"
+          placeholder="For example, Databases"
+          [class.field-invalid]="showCreateFieldError('name')"
+        />
+      </label>
+
+      <label class="field-label">
+        <span>Description</span>
+        <textarea
+          [(ngModel)]="newSubject.description"
+          name="description"
+          placeholder="Short subject description"
+        ></textarea>
+      </label>
+
+      <label class="field-label">
+        <span>Color</span>
+        <input [(ngModel)]="newSubject.color" name="color" placeholder="#2563eb" />
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="closeSubjectModal()">Cancel</button>
+      <button type="button" class="open-modal-button" (click)="createSubject()">Create subject</button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isFacultyModalOpen()" class="modal-backdrop" (click)="closeFacultyModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Create Faculty</h3>
+      <button type="button" class="icon-button" (click)="closeFacultyModal()" aria-label="Close">
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-form">
+      <div *ngIf="facultyErrorMessage()" class="error-message form-message">
+        {{ facultyErrorMessage() }}
+      </div>
+
+      <label class="field-label">
+        <span>Name *</span>
+        <input
+          [(ngModel)]="newFaculty.name"
+          name="faculty_name"
+          placeholder="For example, Engineering"
+          [class.field-invalid]="showFacultyFieldError('name')"
+        />
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="closeFacultyModal()">Cancel</button>
+      <button type="button" class="open-modal-button" (click)="createFaculty()">Create faculty</button>
+    </div>
+  </div>
+</div>

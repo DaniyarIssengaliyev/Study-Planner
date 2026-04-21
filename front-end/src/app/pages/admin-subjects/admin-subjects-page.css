@@ -33,18 +33,56 @@
   color: #166534;
 }
 
-.form-card {
-  display: grid;
+.tabs-card {
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
-  padding: 24px;
+  padding: 20px 24px;
   border-radius: 20px;
   background: white;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
-.form-card h3 {
-  margin: 0;
+.tab-button,
+.open-modal-button,
+.ghost-button,
+.icon-button {
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tab-button {
+  padding: 14px 18px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.open-modal-button {
+  width: fit-content;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: white;
+  font-weight: 700;
+}
+
+.ghost-button {
+  padding: 12px 16px;
+  background: #f3f4f6;
   color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1;
+  border-radius: 999px;
 }
 
 .field-label {
@@ -58,33 +96,52 @@
   color: #1f2937;
 }
 
-.form-card input,
-.form-card textarea {
-  padding: 14px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 14px;
-  font: inherit;
+.field-invalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
 }
 
-.form-card textarea {
-  min-height: 110px;
-  resize: vertical;
+.form-message {
+  margin: 0;
 }
 
-.form-card button {
-  width: fit-content;
-  padding: 14px 18px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.subjects-list {
+.panel-content {
   display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.panel-toolbar,
+.students-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
+}
+
+.panel-toolbar h4,
+.students-panel-head h4,
+.faculty-content h3,
+.subject-content h3,
+.student-head h4 {
+  margin: 0;
+  color: #111827;
+}
+
+.panel-toolbar p,
+.students-panel-head p,
+.student-head span,
+.subject-content p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.subjects-list,
+.faculties-list,
+.students-list,
+.students-panel {
+  display: grid;
+  gap: 14px;
 }
 
 .subject-card {
@@ -95,7 +152,18 @@
   padding: 20px;
   border-radius: 20px;
   background: white;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.faculty-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e5e7eb;
 }
 
 .subject-color {
@@ -104,28 +172,149 @@
   border-radius: 16px;
 }
 
-.subject-content h3 {
-  margin: 0 0 8px;
-  color: #111827;
-}
-
-.subject-content p {
-  margin: 0;
-  color: #6b7280;
-}
-
 .delete-button {
-  padding: 12px 16px;
-  border: none;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fecaca;
   border-radius: 12px;
-  background: #dc2626;
-  color: white;
-  font-weight: 700;
+  background: #fff;
+  color: #dc2626;
   cursor: pointer;
 }
 
+.delete-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.students-toolbar select,
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+  padding: 14px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  font: inherit;
+  width: 100%;
+  background: #fff;
+}
+
+.students-toolbar select {
+  min-width: 240px;
+}
+
+.student-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.student-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.student-faculty,
+.student-stats span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.student-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.empty-state {
+  padding: 16px;
+  border-radius: 14px;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.28);
+}
+
+.modal-card {
+  width: min(100%, 640px);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 50px rgba(17, 24, 39, 0.12);
+}
+
+.modal-large {
+  width: min(100%, 980px);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 24px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #111827;
+}
+
+.modal-form {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.modal-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+
 @media (max-width: 768px) {
-  .subject-card {
+  .subject-card,
+  .faculty-card {
     grid-template-columns: 1fr;
+  }
+
+  .panel-toolbar,
+  .students-panel-head,
+  .student-head,
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .students-toolbar select {
+    min-width: 100%;
   }
 }

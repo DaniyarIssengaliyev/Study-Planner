@@ -115,6 +115,17 @@ class SubjectSummarySerializer(serializers.Serializer):
     tasks_count = serializers.IntegerField()
 
 
+class StudentSummarySerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(max_length=150)
+    full_name = serializers.CharField(max_length=150)
+    faculty_name = serializers.CharField(allow_null=True, required=False)
+    boards_count = serializers.IntegerField()
+    tasks_count = serializers.IntegerField()
+    completed_tasks_count = serializers.IntegerField()
+    overdue_tasks_count = serializers.IntegerField()
+
+
 class SubjectModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
@@ -142,10 +153,10 @@ class BoardModelSerializer(serializers.ModelSerializer):
         read_only_fields = ['owner', 'created_at', 'tasks_count', 'completed_tasks_count', 'subject_name']
 
     def get_tasks_count(self, obj):
-        return obj.tasks.count()
+        return obj.tasks.filter(owner=obj.owner).count()
 
     def get_completed_tasks_count(self, obj):
-        return obj.tasks.filter(status='completed').count()
+        return obj.tasks.filter(owner=obj.owner, status='completed').count()
 
 
 class SubtaskSerializer(serializers.ModelSerializer):

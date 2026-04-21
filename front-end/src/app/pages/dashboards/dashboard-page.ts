@@ -78,13 +78,13 @@ export class DashboardPage implements OnInit {
 
   totalTasks = computed(() => this.filteredTasks().length);
   completedTasks = computed(
-    () => this.filteredTasks().filter((task) => task.status === 'completed').length,
+    () => this.filteredTasks().filter((task) => task.status === 'completed' && !this.isTaskLate(task)).length,
   );
   inProgressTasks = computed(
-    () => this.filteredTasks().filter((task) => task.status === 'in_progress').length,
+    () => this.filteredTasks().filter((task) => task.status === 'in_progress' && !this.isTaskLate(task)).length,
   );
   overdueTasks = computed(
-    () => this.filteredTasks().filter((task) => task.status === 'overdue').length,
+    () => this.filteredTasks().filter((task) => this.isTaskLate(task)).length,
   );
   totalSubjects = computed(() => {
     const ids = new Set(this.filteredTasks().map((task) => task.subject));
@@ -114,7 +114,7 @@ export class DashboardPage implements OnInit {
     {
       key: 'todo',
       label: 'To Do',
-      value: this.filteredTasks().filter((task) => task.status === 'todo').length,
+      value: this.filteredTasks().filter((task) => task.status === 'todo' && !this.isTaskLate(task)).length,
       color: '#f59e0b',
     },
     {
@@ -307,6 +307,20 @@ export class DashboardPage implements OnInit {
       task.subtasks?.filter((item) => item.is_completed).length ??
       0;
     return Math.round((completed / total) * 100);
+  }
+
+  isTaskLate(task: Task): boolean {
+    const dueDate = new Date(task.due_date);
+    if (Number.isNaN(dueDate.getTime())) {
+      return false;
+    }
+
+    if (task.completed_at) {
+      const completedAt = new Date(task.completed_at);
+      return !Number.isNaN(completedAt.getTime()) && completedAt.getTime() > dueDate.getTime();
+    }
+
+    return Date.now() > dueDate.getTime();
   }
 
   private startOfDay(value: Date): Date {
