@@ -30,6 +30,16 @@ export interface Subtask {
   title: string;
   is_completed: boolean;
   order: number;
+  completed_at?: string | null;
+}
+
+export interface TaskActivity {
+  id: number;
+  event_type: 'task_completed' | 'task_reopened' | 'subtask_completed' | 'subtask_reopened';
+  message: string;
+  created_at: string;
+  subtask?: number | null;
+  subtask_title?: string | null;
 }
 
 export interface Task {
@@ -37,6 +47,7 @@ export interface Task {
   title: string;
   description: string;
   due_date: string;
+  completed_at?: string | null;
   status: 'todo' | 'in_progress' | 'completed' | 'overdue';
   priority: 'low' | 'medium' | 'high';
   subject: number;
@@ -44,6 +55,10 @@ export interface Task {
   owner?: number;
   owner_username?: string;
   subtasks?: Subtask[];
+  progress_percentage?: number;
+  completed_subtasks_count?: number;
+  total_subtasks_count?: number;
+  activity_log?: TaskActivity[];
 }
 
 export interface LoginRequest {

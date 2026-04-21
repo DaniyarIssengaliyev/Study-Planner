@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task
+from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -125,14 +125,26 @@ class SubjectModelSerializer(serializers.ModelSerializer):
 class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subtask
-        fields = ['id', 'task', 'title', 'is_completed', 'order']
+        fields = ['id', 'task', 'title', 'is_completed', 'order', 'completed_at']
         read_only_fields = ['task']
+
+
+class TaskActivitySerializer(serializers.ModelSerializer):
+    subtask_title = serializers.CharField(source='subtask.title', read_only=True)
+
+    class Meta:
+        model = TaskActivity
+        fields = ['id', 'event_type', 'message', 'created_at', 'subtask', 'subtask_title']
 
 
 class TaskModelSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     owner_username = serializers.CharField(source='owner.username', read_only=True)
     subtasks = SubtaskSerializer(many=True, read_only=True)
+    progress_percentage = serializers.SerializerMethodField()
+    completed_subtasks_count = serializers.SerializerMethodField()
+    total_subtasks_count = serializers.SerializerMethodField()
+    activity_log = TaskActivitySerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -143,13 +155,32 @@ class TaskModelSerializer(serializers.ModelSerializer):
             'due_date',
             'status',
             'priority',
+            'completed_at',
             'subject',
             'subject_name',
             'owner',
             'owner_username',
             'subtasks',
+            'progress_percentage',
+            'completed_subtasks_count',
+            'total_subtasks_count',
+            'activity_log',
         ]
-        read_only_fields = ['owner', 'owner_username', 'subtasks']
+        read_only_fields = ['owner', 'owner_username', 'subtasks', 'activity_log']
+
+    def get_completed_subtasks_count(self, obj):
+        return obj.subtasks.filter(is_completed=True).count()
+
+    def get_total_subtasks_count(self, obj):
+        return obj.subtasks.count()
+
+    def get_progress_percentage(self, obj):
+        total = obj.subtasks.count()
+        if total == 0:
+            return 0
+
+        completed = obj.subtasks.filter(is_completed=True).count()
+        return round((completed / total) * 100)
 
 
 class StudySessionModelSerializer(serializers.ModelSerializer):

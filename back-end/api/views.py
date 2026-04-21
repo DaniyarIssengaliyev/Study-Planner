@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task
+from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
 from .serializers import (
     CustomTokenObtainPairSerializer,
     FacultySerializer,
@@ -39,7 +39,10 @@ def get_user_role(user):
 
 
 def get_task_for_user(request, pk):
-    task = get_object_or_404(Task.objects.select_related('subject', 'owner').prefetch_related('subtasks'), pk=pk)
+    task = get_object_or_404(
+        Task.objects.select_related('subject', 'owner').prefetch_related('subtasks', 'activity_log__subtask'),
+        pk=pk,
+    )
 
     if get_user_role(request.user) == 'superadmin':
         return task
@@ -184,10 +187,20 @@ def subject_summary(request):
 
 def update_overdue_tasks():
     tasks = Task.objects.filter(status__in=['todo', 'in_progress'])
+    now = timezone.now()
     for task in tasks:
-        if task.due_date < timezone.localdate():
+        if task.due_date < now:
             task.status = 'overdue'
             task.save(update_fields=['status'])
+
+
+def log_task_activity(task, event_type, message, subtask=None):
+    TaskActivity.objects.create(
+        task=task,
+        subtask=subtask,
+        event_type=event_type,
+        message=message,
+    )
 
 
 class SubjectListCreateAPIView(APIView):
@@ -234,9 +247,9 @@ class TaskListCreateAPIView(APIView):
         update_overdue_tasks()
 
         if get_user_role(request.user) == 'superadmin':
-            tasks = Task.objects.all().select_related('subject', 'owner').prefetch_related('subtasks')
+            tasks = Task.objects.all().select_related('subject', 'owner').prefetch_related('subtasks', 'activity_log__subtask')
         else:
-            tasks = Task.objects.filter(owner=request.user).select_related('subject', 'owner').prefetch_related('subtasks')
+            tasks = Task.objects.filter(owner=request.user).select_related('subject', 'owner').prefetch_related('subtasks', 'activity_log__subtask')
 
         serializer = TaskModelSerializer(tasks, many=True)
         return Response(serializer.data)
@@ -244,7 +257,13 @@ class TaskListCreateAPIView(APIView):
     def post(self, request):
         serializer = TaskModelSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(owner=request.user)
+            task = serializer.save(
+                owner=request.user,
+                completed_at=timezone.now() if serializer.validated_data.get('status') == 'completed' else None,
+            )
+            if task.status == 'completed':
+                log_task_activity(task, 'task_completed', 'Task marked as completed.')
+            serializer = TaskModelSerializer(task)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -268,10 +287,21 @@ class TaskDetailAPIView(APIView):
         if task is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        previous_status = task.status
         serializer = TaskModelSerializer(task, data=request.data)
         if serializer.is_valid():
-            serializer.save(owner=task.owner)
-            return Response(serializer.data)
+            updated_task = serializer.save(owner=task.owner)
+
+            if updated_task.status == 'completed' and previous_status != 'completed':
+                updated_task.completed_at = timezone.now()
+                updated_task.save(update_fields=['completed_at'])
+                log_task_activity(updated_task, 'task_completed', 'Task marked as completed.')
+            elif updated_task.status != 'completed' and previous_status == 'completed':
+                updated_task.completed_at = None
+                updated_task.save(update_fields=['completed_at'])
+                log_task_activity(updated_task, 'task_reopened', 'Task moved out of completed.')
+
+            return Response(TaskModelSerializer(updated_task).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
@@ -320,10 +350,31 @@ class SubtaskDetailAPIView(APIView):
         if subtask is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        was_completed = subtask.is_completed
         serializer = SubtaskSerializer(subtask, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save(task=subtask.task)
-            return Response(serializer.data)
+            updated_subtask = serializer.save(task=subtask.task)
+
+            if updated_subtask.is_completed and not was_completed:
+                updated_subtask.completed_at = timezone.now()
+                updated_subtask.save(update_fields=['completed_at'])
+                log_task_activity(
+                    updated_subtask.task,
+                    'subtask_completed',
+                    f'Subtask completed: {updated_subtask.title}',
+                    subtask=updated_subtask,
+                )
+            elif not updated_subtask.is_completed and was_completed:
+                updated_subtask.completed_at = None
+                updated_subtask.save(update_fields=['completed_at'])
+                log_task_activity(
+                    updated_subtask.task,
+                    'subtask_reopened',
+                    f'Subtask reopened: {updated_subtask.title}',
+                    subtask=updated_subtask,
+                )
+
+            return Response(SubtaskSerializer(updated_subtask).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):

@@ -60,7 +60,7 @@ class Subject(models.Model):
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    due_date = models.DateField()
+    due_date = models.DateTimeField()
 
     status = models.CharField(
         max_length=20,
@@ -89,6 +89,7 @@ class Task(models.Model):
         on_delete=models.CASCADE,
         related_name='tasks',
     )
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -99,12 +100,34 @@ class Subtask(models.Model):
     title = models.CharField(max_length=200)
     is_completed = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['order', 'id']
 
     def __str__(self):
         return f'{self.task.title} - {self.title}'
+
+
+class TaskActivity(models.Model):
+    EVENT_CHOICES = [
+        ('task_completed', 'Task completed'),
+        ('task_reopened', 'Task reopened'),
+        ('subtask_completed', 'Subtask completed'),
+        ('subtask_reopened', 'Subtask reopened'),
+    ]
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activity_log')
+    subtask = models.ForeignKey(Subtask, on_delete=models.CASCADE, null=True, blank=True, related_name='activity_log')
+    event_type = models.CharField(max_length=30, choices=EVENT_CHOICES)
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+
+    def __str__(self):
+        return f'{self.task.title}: {self.message}'
 
 
 class StudySession(models.Model):

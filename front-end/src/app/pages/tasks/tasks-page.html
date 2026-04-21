@@ -15,7 +15,7 @@
     </button>
   </div>
 
-  <div *ngIf="errorMessage()" class="message error-message">{{ errorMessage() }}</div>
+  <div *ngIf="pageErrorMessage()" class="message error-message">{{ pageErrorMessage() }}</div>
   <div *ngIf="successMessage()" class="message success-message">{{ successMessage() }}</div>
 
   <p *ngIf="isLoadingSubjects()">Loading subjects...</p>
@@ -51,7 +51,19 @@
               (click)="openTaskDetails(task)"
             >
               <div class="task-card-head">
-                <h4>{{ task.title }}</h4>
+                <div class="task-card-title-row">
+                  <button
+                    type="button"
+                    class="task-complete-button button-animated"
+                    [class.task-complete-button-done]="isTaskCompleted(task)"
+                    [attr.aria-label]="completionButtonLabel(task)"
+                    (click)="toggleTaskCompletion(task, $event)"
+                  >
+                    <span></span>
+                  </button>
+                  <h4>{{ task.title }}</h4>
+                </div>
+
                 <span
                   class="priority-badge"
                   [class.high]="task.priority === 'high'"
@@ -61,15 +73,20 @@
                 </span>
               </div>
 
-              <p class="task-description">{{ task.description || 'No description' }}</p>
-
               <div class="task-meta">
                 <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
-                <span>{{ task.due_date }}</span>
+                <span>{{ formatDueDate(task.due_date) }}</span>
+                <span>{{ deadlineCountdown(task) }}</span>
               </div>
 
               <div class="task-progress" *ngIf="subtaskCount(task) > 0">
-                {{ completedSubtasks(task) }}/{{ subtaskCount(task) }} subtasks
+                <div class="task-progress-head">
+                  <span>{{ progressPercentage(task) }}% done</span>
+                  <span>{{ completedSubtasks(task) }}/{{ subtaskCount(task) }} subtasks</span>
+                </div>
+                <div class="task-progress-bar">
+                  <span [style.width.%]="progressPercentage(task)"></span>
+                </div>
               </div>
             </article>
           }
@@ -86,14 +103,25 @@
     <div class="modal-header">
       <h3>Create Task</h3>
       <button type="button" class="icon-button button-animated" (click)="closeCreateModal()">
-        ×
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6L18 18M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-width="2"
+          />
+        </svg>
       </button>
     </div>
 
     <div class="modal-form">
-      <label>
+      <label [class.required-field]="showCreateFieldError('title')">
         <span>Title</span>
         <input [(ngModel)]="createForm.title" name="create_title" type="text" />
+        <small *ngIf="showCreateFieldError('title')" class="field-error-text">
+          Title is required.
+        </small>
       </label>
 
       <label>
@@ -102,9 +130,12 @@
       </label>
 
       <div class="modal-grid">
-        <label>
+        <label [class.required-field]="showCreateFieldError('due_date')">
           <span>Due date</span>
-          <input [(ngModel)]="createForm.due_date" name="create_due_date" type="date" />
+          <input [(ngModel)]="createForm.due_date" name="create_due_date" type="datetime-local" />
+          <small *ngIf="showCreateFieldError('due_date')" class="field-error-text">
+            Due date is required.
+          </small>
         </label>
 
         <label>
@@ -127,13 +158,16 @@
           </select>
         </label>
 
-        <label>
+        <label [class.required-field]="showCreateFieldError('subject')">
           <span>Subject</span>
           <select [(ngModel)]="createForm.subject" name="create_subject">
             @for (subject of subjects(); track subject.id) {
               <option [ngValue]="subject.id">{{ subject.name }}</option>
             }
           </select>
+          <small *ngIf="showCreateFieldError('subject')" class="field-error-text">
+            Subject is required.
+          </small>
         </label>
       </div>
     </div>
@@ -157,9 +191,29 @@
 <div *ngIf="isTaskModalOpen()" class="modal-backdrop" (click)="closeTaskDetails()">
   <div class="modal-card modal-large modal-enter" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Task Details</h3>
+      <div class="task-modal-heading">
+        <button
+          type="button"
+          class="task-complete-button button-animated"
+          [class.task-complete-button-done]="isTaskCompleted(selectedTask())"
+          [attr.aria-label]="completionButtonLabel(selectedTask())"
+          (click)="selectedTask() && toggleTaskCompletion(selectedTask()!, $event)"
+        >
+          <span></span>
+        </button>
+        <h3>Task Details</h3>
+      </div>
+
       <button type="button" class="icon-button button-animated" (click)="closeTaskDetails()">
-        ×
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6L18 18M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-width="2"
+          />
+        </svg>
       </button>
     </div>
 
@@ -178,7 +232,7 @@
         <div class="modal-grid">
           <label>
             <span>Due date</span>
-            <input [(ngModel)]="taskForm.due_date" name="edit_due_date" type="date" />
+            <input [(ngModel)]="taskForm.due_date" name="edit_due_date" type="datetime-local" />
           </label>
 
           <label>
@@ -224,12 +278,42 @@
             Delete task
           </button>
         </div>
+
+        <section class="task-history">
+          <div class="task-history-head">
+            <h4>Completion History</h4>
+            <span>{{ historyEntries(task).length }}</span>
+          </div>
+
+          <div class="task-history-list">
+            @for (entry of historyEntries(task); track entry.id) {
+              <div class="task-history-item">
+                <p>{{ entry.message }}</p>
+                <span>{{ formatHistoryDate(entry.created_at) }}</span>
+              </div>
+            }
+
+            <div *ngIf="historyEntries(task).length === 0" class="empty-subtasks">
+              No completion history yet.
+            </div>
+          </div>
+        </section>
       </div>
 
       <aside class="subtasks-panel">
         <div class="subtasks-header">
           <h4>Subtasks</h4>
           <span>{{ completedSubtasks(task) }}/{{ subtaskCount(task) }}</span>
+        </div>
+
+        <div class="subtasks-progress" *ngIf="subtaskCount(task) > 0">
+          <div class="task-progress-head">
+            <span>{{ progressPercentage(task) }}% done</span>
+            <span>{{ deadlineCountdown(task) }}</span>
+          </div>
+          <div class="task-progress-bar">
+            <span [style.width.%]="progressPercentage(task)"></span>
+          </div>
         </div>
 
         <div class="subtask-create">
