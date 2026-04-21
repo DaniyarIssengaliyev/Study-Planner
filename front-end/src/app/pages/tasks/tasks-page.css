@@ -89,7 +89,10 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
   animation: cardFadeIn 0.22s ease;
 }
 
@@ -264,12 +267,15 @@
   border: none;
   cursor: pointer;
   font: inherit;
-  transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    background-color 0.14s ease;
 }
 
 .button-animated:hover {
   transform: translateY(-1px);
-  background-color: #2563eb;
+  cursor: pointer;
 }
 
 .button-animated:active {
@@ -333,7 +339,7 @@
 
 .icon-button:hover {
   background: #fecaca;
-  color:#b91c1c;
+  color: #b91c1c;
 }
 
 .icon-button svg {
@@ -420,7 +426,9 @@
   background: #ffffff;
   color: #111827;
   font: inherit;
-  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
 }
 
 .modal-form input:focus,
@@ -571,7 +579,9 @@
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
 }
 
 .subtask-item:hover {
