@@ -113,7 +113,6 @@ class GoogleLoginAPIView(APIView):
         access_token['username'] = user.username
         access_token['role'] = getattr(user.profile, 'role', 'student')
 
-
         return Response(
             {
                 'refresh': str(refresh),
@@ -177,16 +176,37 @@ class SubjectListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        subjects = Subject.objects.all()
+        subjects = Subject.objects.all().order_by('name')
         serializer = SubjectModelSerializer(subjects, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        if getattr(request.user.profile, 'role', 'student') != 'superadmin':
+            return Response(
+                {'detail': 'Только superadmin может добавлять предметы.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = SubjectModelSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubjectDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        if getattr(request.user.profile, 'role', 'student') != 'superadmin':
+            return Response(
+                {'detail': 'Только superadmin может удалять предметы.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        subject = get_object_or_404(Subject, pk=pk)
+        subject.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TaskListCreateAPIView(APIView):
@@ -240,7 +260,6 @@ class TaskDetailAPIView(APIView):
 
         if task is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-
 
         serializer = TaskModelSerializer(task, data=request.data)
         if serializer.is_valid():

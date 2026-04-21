@@ -30,26 +30,24 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
     full_name = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=Profile.ROLE_CHOICES, write_only=True, default='student')
     faculty_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'full_name', 'role', 'faculty_id']
+        fields = ['username', 'email', 'password', 'full_name', 'faculty_id']
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError('Username already exists.')
+            raise serializers.ValidationError('Пользователь с таким username уже существует.')
         return value
 
     def validate_email(self, value):
         if value and User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('Email already exists.')
+            raise serializers.ValidationError('Пользователь с таким email уже существует.')
         return value
 
     def create(self, validated_data):
         full_name = validated_data.pop('full_name')
-        role = validated_data.pop('role', 'student')
         faculty_id = validated_data.pop('faculty_id', None)
 
         user = User.objects.create_user(**validated_data)
@@ -59,7 +57,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         profile = user.profile
         profile.full_name = full_name
-        profile.role = role
+        profile.role = 'student'
 
         if faculty_id:
             profile.faculty_id = faculty_id
@@ -73,6 +71,12 @@ class GoogleLoginSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    login = serializers.CharField(write_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields[self.username_field].required = False
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -81,6 +85,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        login_value = attrs.get('login', '').strip()
+
+        if not login_value:
+            raise serializers.ValidationError({
+                'login': ['Введите email или username.']
+            })
+
+        matched_user = User.objects.filter(email__iexact=login_value).first()
+        attrs[self.username_field] = matched_user.username if matched_user else login_value
+
         data = super().validate(attrs)
         data['user'] = UserSerializer(self.user).data
         return data

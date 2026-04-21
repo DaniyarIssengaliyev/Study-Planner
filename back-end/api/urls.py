@@ -8,6 +8,7 @@ from .views import (
     NoteListAPIView,
     RegisterAPIView,
     StudySessionListAPIView,
+    SubjectDetailAPIView,
     SubjectListCreateAPIView,
     TaskDetailAPIView,
     TaskListCreateAPIView,
@@ -26,6 +27,7 @@ urlpatterns = [
     path('subjects/summary/', subject_summary, name='subject-summary'),
 
     path('subjects/', SubjectListCreateAPIView.as_view(), name='subject-list-create'),
+    path('subjects/<int:pk>/', SubjectDetailAPIView.as_view(), name='subject-detail'),
     path('tasks/', TaskListCreateAPIView.as_view(), name='task-list-create'),
     path('tasks/<int:pk>/', TaskDetailAPIView.as_view(), name='task-detail'),
     path('sessions/', StudySessionListAPIView.as_view(), name='session-list'),
