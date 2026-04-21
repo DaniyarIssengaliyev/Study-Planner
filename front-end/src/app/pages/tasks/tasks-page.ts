@@ -302,7 +302,7 @@ export class TasksPage implements OnInit {
           this.dragOverColumn.set(null);
         },
         error: (err) => {
-          this.errorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to move task.');
+          this.errorMessage.set(this.extractErrorMessage(err?.error) || null);
           this.draggedTaskId.set(null);
           this.dragOverColumn.set(null);
         },
