@@ -1,0 +1,34 @@
+<div class="register-page">
+  <div class="register-card">
+    <h2>Create Account</h2>
+    <p>Register to access Study Planner.</p>
+
+    <div *ngIf="errorMessage()" class="error-message">
+      {{ errorMessage() }}
+    </div>
+
+    <form (ngSubmit)="submit()" class="register-form">
+      <input [(ngModel)]="form.full_name" name="full_name" type="text" placeholder="Full name" />
+
+      <input [(ngModel)]="form.username" name="username" type="text" placeholder="Username" />
+
+      <input [(ngModel)]="form.email" name="email" type="email" placeholder="Email" />
+
+      <input [(ngModel)]="form.password" name="password" type="password" placeholder="Password" />
+
+      <select [(ngModel)]="form.role" name="role">
+        <option value="student">Student</option>
+        <option value="superadmin">Superadmin</option>
+      </select>
+
+      <button type="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Creating...' : 'Create Account' }}
+      </button>
+    </form>
+
+    <p class="auth-link">
+      Already have an account?
+      <a routerLink="/login">Sign in</a>
+    </p>
+  </div>
+</div>

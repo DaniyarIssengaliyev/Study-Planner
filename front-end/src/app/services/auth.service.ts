@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { LoginRequest, LoginResponse, User } from '../models/api.models';
+import { LoginRequest, LoginResponse, RegisterRequest, User } from '../models/api.models';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +13,10 @@ export class AuthService {
   currentUser = signal<User | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
   isSuperadmin = computed(() => this.currentUser()?.profile.role === 'superadmin');
+
+  register(data: RegisterRequest): Observable<User> {
+    return this.api.register(data);
+  }
 
   login(data: LoginRequest): Observable<LoginResponse> {
     return this.api.login(data).pipe(

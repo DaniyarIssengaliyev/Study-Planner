@@ -8,23 +8,18 @@
     </div>
 
     <form (ngSubmit)="submit()" class="login-form">
-      <input
-        [(ngModel)]="form.username"
-        name="username"
-        type="text"
-        placeholder="Username"
-      />
+      <input [(ngModel)]="form.username" name="username" type="text" placeholder="Username" />
 
-      <input
-        [(ngModel)]="form.password"
-        name="password"
-        type="password"
-        placeholder="Password"
-      />
+      <input [(ngModel)]="form.password" name="password" type="password" placeholder="Password" />
 
       <button type="submit" [disabled]="isLoading()">
         {{ isLoading() ? 'Signing in...' : 'Sign In' }}
       </button>
     </form>
+
+    <p class="auth-link">
+      No account yet?
+      <a routerLink="/register">Create one</a>
+    </p>
   </div>
 </div>

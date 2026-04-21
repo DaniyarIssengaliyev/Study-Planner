@@ -17,16 +17,10 @@ export class App implements OnInit {
     const token = this.auth.getToken();
 
     if (!token) {
-      this.router.navigateByUrl('/login');
       return;
     }
 
     this.auth.loadMe().subscribe({
-      next: () => {
-        if (this.router.url === '/' || this.router.url === '/login') {
-          this.router.navigateByUrl('/dashboard');
-        }
-      },
       error: () => {
         this.auth.logout();
         this.router.navigateByUrl('/login');

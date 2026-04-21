@@ -1,4 +1,4 @@
-.login-page {
+.register-page {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
@@ -9,8 +9,8 @@
   background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
 }
 
-.login-card {
-  width: min(100%, 420px);
+.register-card {
+  width: min(100%, 460px);
   padding: 24px;
   border: 1px solid #d9d9d9;
   border-radius: 16px;
@@ -18,21 +18,22 @@
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
 
-.login-card h2 {
+.register-card h2 {
   margin: 0 0 8px;
 }
 
-.login-card p {
+.register-card p {
   margin: 0 0 16px;
   color: #666666;
 }
 
-.login-form {
+.register-form {
   display: grid;
   gap: 12px;
 }
 
-.login-form input {
+.register-form input,
+.register-form select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #cfcfcf;
@@ -41,7 +42,7 @@
   font: inherit;
 }
 
-.login-form button {
+.register-form button {
   padding: 12px 14px;
   border: none;
   border-radius: 10px;
@@ -51,7 +52,7 @@
   cursor: pointer;
 }
 
-.login-form button:disabled {
+.register-form button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
