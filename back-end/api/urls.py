@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    BoardDetailAPIView,
+    BoardListCreateAPIView,
     FacultyListAPIView,
     GoogleLoginAPIView,
     LoginAPIView,
@@ -25,6 +27,9 @@ urlpatterns = [
     path('auth/me/', MeAPIView.as_view(), name='me'),
 
     path('faculties/', FacultyListAPIView.as_view(), name='faculty-list'),
+
+    path('boards/', BoardListCreateAPIView.as_view(), name='board-list-create'),
+    path('boards/<int:pk>/', BoardDetailAPIView.as_view(), name='board-detail'),
 
     path('tasks/simple/', task_list_simple, name='task-list-simple'),
     path('subjects/summary/', subject_summary, name='subject-summary'),

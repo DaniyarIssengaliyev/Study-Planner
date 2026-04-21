@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
+from .models import Board, Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -55,7 +55,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         faculty_id = validated_data.pop('faculty_id', None)
 
         user = User.objects.create_user(**validated_data)
-        
         user.first_name = full_name.strip()
         user.save()
 
@@ -122,11 +121,38 @@ class SubjectModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class BoardModelSerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+    tasks_count = serializers.SerializerMethodField()
+    completed_tasks_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Board
+        fields = [
+            'id',
+            'title',
+            'description',
+            'subject',
+            'subject_name',
+            'owner',
+            'created_at',
+            'tasks_count',
+            'completed_tasks_count',
+        ]
+        read_only_fields = ['owner', 'created_at', 'tasks_count', 'completed_tasks_count', 'subject_name']
+
+    def get_tasks_count(self, obj):
+        return obj.tasks.count()
+
+    def get_completed_tasks_count(self, obj):
+        return obj.tasks.filter(status='completed').count()
+
+
 class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subtask
         fields = ['id', 'task', 'title', 'is_completed', 'order', 'completed_at']
-        read_only_fields = ['task']
+        read_only_fields = ['task', 'completed_at']
 
 
 class TaskActivitySerializer(serializers.ModelSerializer):
@@ -139,12 +165,13 @@ class TaskActivitySerializer(serializers.ModelSerializer):
 
 class TaskModelSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
+    board_title = serializers.CharField(source='board.title', read_only=True)
     owner_username = serializers.CharField(source='owner.username', read_only=True)
     subtasks = SubtaskSerializer(many=True, read_only=True)
+    activity_log = TaskActivitySerializer(many=True, read_only=True)
     progress_percentage = serializers.SerializerMethodField()
     completed_subtasks_count = serializers.SerializerMethodField()
     total_subtasks_count = serializers.SerializerMethodField()
-    activity_log = TaskActivitySerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -153,11 +180,13 @@ class TaskModelSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'due_date',
+            'completed_at',
             'status',
             'priority',
-            'completed_at',
             'subject',
             'subject_name',
+            'board',
+            'board_title',
             'owner',
             'owner_username',
             'subtasks',
@@ -166,19 +195,40 @@ class TaskModelSerializer(serializers.ModelSerializer):
             'total_subtasks_count',
             'activity_log',
         ]
-        read_only_fields = ['owner', 'owner_username', 'subtasks', 'activity_log']
+        read_only_fields = [
+            'owner',
+            'owner_username',
+            'subject_name',
+            'board_title',
+            'subtasks',
+            'progress_percentage',
+            'completed_subtasks_count',
+            'total_subtasks_count',
+            'activity_log',
+            'completed_at',
+        ]
 
-    def get_completed_subtasks_count(self, obj):
-        return obj.subtasks.filter(is_completed=True).count()
+    def validate(self, attrs):
+        subject = attrs.get('subject') or getattr(self.instance, 'subject', None)
+        board = attrs.get('board') or getattr(self.instance, 'board', None)
+
+        if board and subject and board.subject_id and board.subject_id != subject.id:
+            raise serializers.ValidationError({
+                'board': ['Board subject does not match selected subject.']
+            })
+
+        return attrs
 
     def get_total_subtasks_count(self, obj):
         return obj.subtasks.count()
 
+    def get_completed_subtasks_count(self, obj):
+        return obj.subtasks.filter(is_completed=True).count()
+
     def get_progress_percentage(self, obj):
         total = obj.subtasks.count()
         if total == 0:
-            return 0
-
+            return 100 if obj.status == 'completed' else 0
         completed = obj.subtasks.filter(is_completed=True).count()
         return round((completed / total) * 100)
 

@@ -24,6 +24,18 @@ export interface Subject {
   description?: string;
 }
 
+export interface Board {
+  id: number;
+  title: string;
+  description: string;
+  subject: number | null;
+  subject_name?: string | null;
+  owner?: number;
+  created_at: string;
+  tasks_count?: number;
+  completed_tasks_count?: number;
+}
+
 export interface Subtask {
   id: number;
   task: number;
@@ -52,6 +64,8 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   subject: number;
   subject_name?: string;
+  board?: number | null;
+  board_title?: string | null;
   owner?: number;
   owner_username?: string;
   subtasks?: Subtask[];
@@ -80,6 +94,14 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface CreateBoardRequest {
+  title: string;
+  description: string;
+  subject?: number | null;
+}
+
+export interface UpdateBoardRequest extends Partial<CreateBoardRequest> {}
+
 export interface CreateTaskRequest {
   title: string;
   description: string;
@@ -87,6 +109,7 @@ export interface CreateTaskRequest {
   status: 'todo' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   subject: number;
+  board?: number | null;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {}

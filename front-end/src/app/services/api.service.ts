@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import {
+  Board,
+  CreateBoardRequest,
   CreateSubjectRequest,
   CreateSubtaskRequest,
   CreateTaskRequest,
@@ -11,6 +13,7 @@ import {
   Subject,
   Subtask,
   Task,
+  UpdateBoardRequest,
   UpdateSubtaskRequest,
   UpdateTaskRequest,
   User,
@@ -58,9 +61,40 @@ export class ApiService {
     return this.http.get<Faculty[]>(`${this.baseUrl}/faculties/`);
   }
 
-  getTasks(): Observable<Task[]> {
+  getBoards(): Observable<Board[]> {
+    return this.http.get<Board[]>(`${this.baseUrl}/boards/`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  createBoard(data: CreateBoardRequest): Observable<Board> {
+    return this.http.post<Board>(`${this.baseUrl}/boards/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  updateBoard(id: number, data: UpdateBoardRequest): Observable<Board> {
+    return this.http.put<Board>(`${this.baseUrl}/boards/${id}/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  deleteBoard(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/boards/${id}/`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  getTasks(boardId?: number | null): Observable<Task[]> {
+    let params = new HttpParams();
+
+    if (boardId) {
+      params = params.set('board', String(boardId));
+    }
+
     return this.http.get<Task[]>(`${this.baseUrl}/tasks/`, {
       headers: this.getAuthHeaders(),
+      params,
     });
   }
 

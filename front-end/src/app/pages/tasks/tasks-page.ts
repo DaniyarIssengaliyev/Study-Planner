@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
-import { Subject, Subtask, Task, TaskActivity } from '../../models/api.models';
+import { Board, Subject, Subtask, Task, TaskActivity } from '../../models/api.models';
 
 type BoardStatus = 'todo' | 'in_progress' | 'completed';
 
@@ -15,13 +16,21 @@ type BoardStatus = 'todo' | 'in_progress' | 'completed';
 })
 export class TasksPage implements OnInit, OnDestroy {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private countdownTimerId: number | null = null;
 
   tasks = signal<Task[]>([]);
   subjects = signal<Subject[]>([]);
+  boards = signal<Board[]>([]);
+  selectedBoardId = signal<number | null>(null);
+  hideBoardsList = signal(false);
+
   isLoadingTasks = signal(true);
   isLoadingSubjects = signal(true);
+  isLoadingBoards = signal(true);
   isSaving = signal(false);
+
   pageErrorMessage = signal<string | null>(null);
   taskErrorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
@@ -29,6 +38,8 @@ export class TasksPage implements OnInit, OnDestroy {
 
   isCreateModalOpen = signal(false);
   isTaskModalOpen = signal(false);
+  isBoardModalOpen = signal(false);
+
   selectedTask = signal<Task | null>(null);
   draggedTaskId = signal<number | null>(null);
   dragOverColumn = signal<BoardStatus | null>(null);
@@ -40,13 +51,33 @@ export class TasksPage implements OnInit, OnDestroy {
   ];
 
   createForm = this.getEmptyCreateForm();
+  boardForm = this.getEmptyBoardForm();
   taskForm = this.getEmptyEditForm();
   newSubtaskTitle = '';
+
   createValidationTriggered = false;
+  boardValidationTriggered = false;
 
   ngOnInit(): void {
     this.loadSubjects();
-    this.loadTasks();
+    this.loadBoards();
+
+    this.route.queryParamMap.subscribe((params) => {
+      const boardParam = params.get('board');
+      const boardId = boardParam ? Number(boardParam) : null;
+
+      if (boardId && !Number.isNaN(boardId)) {
+        this.selectedBoardId.set(boardId);
+        this.hideBoardsList.set(true);
+        this.loadTasksForSelectedBoard();
+      } else {
+        this.selectedBoardId.set(null);
+        this.hideBoardsList.set(false);
+        this.tasks.set([]);
+        this.isLoadingTasks.set(false);
+      }
+    });
+
     this.countdownTimerId = window.setInterval(() => {
       this.currentTime.set(new Date());
     }, 60_000);
@@ -58,6 +89,14 @@ export class TasksPage implements OnInit, OnDestroy {
     }
   }
 
+  getEmptyBoardForm() {
+    return {
+      title: '',
+      description: '',
+      subject: null as number | null,
+    };
+  }
+
   getEmptyCreateForm() {
     return {
       title: '',
@@ -66,6 +105,7 @@ export class TasksPage implements OnInit, OnDestroy {
       priority: 'medium' as 'low' | 'medium' | 'high',
       status: 'todo' as BoardStatus,
       subject: null as number | null,
+      board: null as number | null,
     };
   }
 
@@ -78,6 +118,7 @@ export class TasksPage implements OnInit, OnDestroy {
       priority: 'medium' as 'low' | 'medium' | 'high',
       status: 'todo' as BoardStatus,
       subject: null as number | null,
+      board: null as number | null,
     };
   }
 
@@ -86,26 +127,45 @@ export class TasksPage implements OnInit, OnDestroy {
 
     this.api.getSubjects().subscribe({
       next: (subjects) => {
-        const sorted = [...subjects].sort((a, b) => a.name.localeCompare(b.name));
-        this.subjects.set(sorted);
-
-        if (!this.createForm.subject && sorted.length > 0) {
-          this.createForm.subject = sorted[0].id;
-        }
-
+        this.subjects.set([...subjects].sort((a, b) => a.name.localeCompare(b.name)));
         this.isLoadingSubjects.set(false);
       },
       error: (err) => {
-        this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to load subjects.');
+        this.pageErrorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Failed to load subjects.',
+        );
         this.isLoadingSubjects.set(false);
       },
     });
   }
 
-  loadTasks(): void {
+  loadBoards(): void {
+    this.isLoadingBoards.set(true);
+
+    this.api.getBoards().subscribe({
+      next: (boards) => {
+        this.boards.set([...boards].sort((a, b) => a.title.localeCompare(b.title)));
+        this.isLoadingBoards.set(false);
+      },
+      error: (err) => {
+        this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to load boards.');
+        this.isLoadingBoards.set(false);
+      },
+    });
+  }
+
+  loadTasksForSelectedBoard(): void {
+    const boardId = this.selectedBoardId();
+
+    if (!boardId) {
+      this.tasks.set([]);
+      this.isLoadingTasks.set(false);
+      return;
+    }
+
     this.isLoadingTasks.set(true);
 
-    this.api.getTasks().subscribe({
+    this.api.getTasks(boardId).subscribe({
       next: (tasks) => {
         this.tasks.set(tasks);
         this.currentTime.set(new Date());
@@ -118,20 +178,90 @@ export class TasksPage implements OnInit, OnDestroy {
     });
   }
 
+  selectBoard(boardId: number): void {
+    this.router.navigate(['/tasks'], {
+      queryParams: { board: boardId },
+    });
+  }
+
+  showBoardsList(): void {
+    this.router.navigate(['/tasks']);
+  }
+
+  currentBoard(): Board | null {
+    const boardId = this.selectedBoardId();
+    return this.boards().find((item) => item.id === boardId) ?? null;
+  }
+
+  availableBoardsForSubject(subjectId: number | null): Board[] {
+    return this.boards().filter((board) => !board.subject || board.subject === subjectId);
+  }
+
   tasksByStatus(status: BoardStatus): Task[] {
     return this.tasks().filter((task) => this.normalizeStatus(task.status) === status);
   }
 
   normalizeStatus(status: Task['status']): BoardStatus {
-    if (status === 'overdue') {
-      return 'todo';
+    return status === 'overdue' ? 'todo' : status;
+  }
+
+  openBoardModal(): void {
+    this.boardForm = this.getEmptyBoardForm();
+    this.boardValidationTriggered = false;
+    this.isBoardModalOpen.set(true);
+  }
+
+  closeBoardModal(): void {
+    this.boardValidationTriggered = false;
+    this.isBoardModalOpen.set(false);
+  }
+
+  createBoard(): void {
+    this.boardValidationTriggered = true;
+    this.pageErrorMessage.set(null);
+    this.successMessage.set(null);
+
+    if (!this.boardForm.title.trim()) {
+      this.pageErrorMessage.set('Enter board title.');
+      return;
     }
-    return status;
+
+    this.isSaving.set(true);
+
+    this.api
+      .createBoard({
+        title: this.boardForm.title.trim(),
+        description: this.boardForm.description.trim(),
+        subject: this.boardForm.subject,
+      })
+      .subscribe({
+        next: (board) => {
+          this.boards.update((current) =>
+            [...current, board].sort((a, b) => a.title.localeCompare(b.title)),
+          );
+
+          this.isSaving.set(false);
+          this.isBoardModalOpen.set(false);
+          this.successMessage.set('Board created.');
+
+          this.router.navigate(['/tasks'], {
+            queryParams: { board: board.id },
+          });
+        },
+        error: (err) => {
+          this.isSaving.set(false);
+          this.pageErrorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Failed to create board.',
+          );
+        },
+      });
   }
 
   openCreateModal(): void {
+    const currentBoard = this.currentBoard();
     this.createForm = this.getEmptyCreateForm();
-    this.createForm.subject = this.subjects()[0]?.id ?? null;
+    this.createForm.subject = currentBoard?.subject ?? this.subjects()[0]?.id ?? null;
+    this.createForm.board = currentBoard?.id ?? null;
     this.createValidationTriggered = false;
     this.isCreateModalOpen.set(true);
     this.successMessage.set(null);
@@ -144,9 +274,26 @@ export class TasksPage implements OnInit, OnDestroy {
 
   createTask(): void {
     this.successMessage.set(null);
+    this.pageErrorMessage.set(null);
     this.createValidationTriggered = true;
 
-    if (!this.createForm.title.trim() || !this.createForm.due_date || !this.createForm.subject) {
+    if (!this.createForm.title.trim()) {
+      this.pageErrorMessage.set('Enter task title.');
+      return;
+    }
+
+    if (!this.createForm.due_date) {
+      this.pageErrorMessage.set('Select due date.');
+      return;
+    }
+
+    if (!this.createForm.subject) {
+      this.pageErrorMessage.set('Select subject.');
+      return;
+    }
+
+    if (!this.createForm.board) {
+      this.pageErrorMessage.set('Select board.');
       return;
     }
 
@@ -160,6 +307,7 @@ export class TasksPage implements OnInit, OnDestroy {
         priority: this.createForm.priority,
         status: this.createForm.status,
         subject: Number(this.createForm.subject),
+        board: Number(this.createForm.board),
       })
       .subscribe({
         next: (task) => {
@@ -168,10 +316,13 @@ export class TasksPage implements OnInit, OnDestroy {
           this.createValidationTriggered = false;
           this.isCreateModalOpen.set(false);
           this.successMessage.set('Task created.');
+          this.loadBoards();
         },
         error: (err) => {
           this.isSaving.set(false);
-          this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to create task.');
+          this.pageErrorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Failed to create task.',
+          );
         },
       });
   }
@@ -192,6 +343,7 @@ export class TasksPage implements OnInit, OnDestroy {
           priority: fullTask.priority,
           status: this.normalizeStatus(fullTask.status),
           subject: fullTask.subject,
+          board: fullTask.board ?? null,
         };
       },
       error: (err) => {
@@ -209,7 +361,7 @@ export class TasksPage implements OnInit, OnDestroy {
 
   saveTaskDetails(): void {
     const currentTask = this.selectedTask();
-    if (!currentTask || !this.taskForm.subject) {
+    if (!currentTask || !this.taskForm.subject || !this.taskForm.board) {
       return;
     }
 
@@ -224,6 +376,7 @@ export class TasksPage implements OnInit, OnDestroy {
         priority: this.taskForm.priority,
         status: this.taskForm.status,
         subject: Number(this.taskForm.subject),
+        board: Number(this.taskForm.board),
       })
       .subscribe({
         next: (updatedTask) => {
@@ -237,13 +390,17 @@ export class TasksPage implements OnInit, OnDestroy {
             priority: updatedTask.priority,
             status: this.normalizeStatus(updatedTask.status),
             subject: updatedTask.subject,
+            board: updatedTask.board ?? null,
           };
           this.isSaving.set(false);
           this.successMessage.set('Task updated.');
+          this.loadBoards();
         },
         error: (err) => {
           this.isSaving.set(false);
-          this.taskErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to update task.');
+          this.taskErrorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Failed to update task.',
+          );
         },
       });
   }
@@ -256,50 +413,12 @@ export class TasksPage implements OnInit, OnDestroy {
           this.closeTaskDetails();
         }
         this.successMessage.set('Task deleted.');
+        this.loadBoards();
       },
       error: (err) => {
         this.taskErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to delete task.');
       },
     });
-  }
-
-  toggleTaskCompletion(task: Task, event?: Event): void {
-    event?.stopPropagation();
-    const nextStatus: BoardStatus = task.status === 'completed' ? 'todo' : 'completed';
-
-    this.taskErrorMessage.set(null);
-
-    this.api
-      .updateTask(task.id, {
-        title: task.title,
-        description: task.description,
-        due_date: task.due_date,
-        priority: task.priority,
-        status: nextStatus,
-        subject: task.subject,
-      })
-      .subscribe({
-        next: (updatedTask) => {
-          this.replaceTask(updatedTask);
-
-          if (this.selectedTask()?.id === updatedTask.id) {
-            this.selectedTask.set(updatedTask);
-            this.taskForm.status = this.normalizeStatus(updatedTask.status);
-          }
-
-          this.successMessage.set(
-            updatedTask.status === 'completed' ? 'Task completed.' : 'Task moved back to active.',
-          );
-        },
-        error: (err) => {
-          const message = this.extractErrorMessage(err?.error) || 'Failed to update task status.';
-          if (this.selectedTask()?.id === task.id) {
-            this.taskErrorMessage.set(message);
-          } else {
-            this.pageErrorMessage.set(message);
-          }
-        },
-      });
   }
 
   onDragStart(taskId: number): void {
@@ -343,22 +462,20 @@ export class TasksPage implements OnInit, OnDestroy {
         priority: task.priority,
         status,
         subject: task.subject,
+        board: task.board ?? null,
       })
       .subscribe({
         next: (updatedTask) => {
           this.replaceTask(updatedTask);
-
           if (this.selectedTask()?.id === updatedTask.id) {
             this.selectedTask.set(updatedTask);
             this.taskForm.status = this.normalizeStatus(updatedTask.status);
           }
-
-          this.successMessage.set(null);
           this.draggedTaskId.set(null);
           this.dragOverColumn.set(null);
         },
         error: (err) => {
-          this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || null);
+          this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to move task.');
           this.draggedTaskId.set(null);
           this.dragOverColumn.set(null);
         },
@@ -384,7 +501,9 @@ export class TasksPage implements OnInit, OnDestroy {
         this.newSubtaskTitle = '';
       },
       error: (err) => {
-        this.taskErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to create subtask.');
+        this.taskErrorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Failed to create subtask.',
+        );
       },
     });
   }
@@ -416,27 +535,27 @@ export class TasksPage implements OnInit, OnDestroy {
           return;
         }
 
-        const updatedTask = {
+        const updatedTask = this.syncTaskProgress({
           ...task,
           subtasks: (task.subtasks ?? []).filter((item) => item.id !== subtaskId),
-        };
+        });
 
-        const syncedTask = this.syncTaskProgress(updatedTask);
-        this.selectedTask.set(syncedTask);
-        this.replaceTask(syncedTask);
+        this.selectedTask.set(updatedTask);
+        this.replaceTask(updatedTask);
       },
       error: (err) => {
-        this.taskErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to delete subtask.');
+        this.taskErrorMessage.set(
+          this.extractErrorMessage(err?.error) || 'Failed to delete subtask.',
+        );
       },
     });
   }
 
-  isTaskCompleted(task: Task | null): boolean {
-    return task?.status === 'completed';
-  }
-
   completedSubtasks(task: Task | null): number {
-    return task?.completed_subtasks_count ?? (task?.subtasks ?? []).filter((item) => item.is_completed).length;
+    return (
+      task?.completed_subtasks_count ??
+      (task?.subtasks ?? []).filter((item) => item.is_completed).length
+    );
   }
 
   subtaskCount(task: Task | null): number {
@@ -447,17 +566,15 @@ export class TasksPage implements OnInit, OnDestroy {
     if (!task) {
       return 0;
     }
-
     if (typeof task.progress_percentage === 'number') {
       return task.progress_percentage;
     }
-
     const total = this.subtaskCount(task);
-    if (total === 0) {
-      return 0;
-    }
+    return total === 0 ? 0 : Math.round((this.completedSubtasks(task) / total) * 100);
+  }
 
-    return Math.round((this.completedSubtasks(task) / total) * 100);
+  historyEntries(task: Task | null): TaskActivity[] {
+    return task?.activity_log ?? [];
   }
 
   formatDueDate(dueDate: string): string {
@@ -492,22 +609,11 @@ export class TasksPage implements OnInit, OnDestroy {
     const minutes = absMinutes % 60;
     const parts: string[] = [];
 
-    if (days > 0) {
-      parts.push(`${days}d`);
-    }
-
-    if (hours > 0 || days > 0) {
-      parts.push(`${hours}h`);
-    }
-
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
     parts.push(`${minutes}m`);
 
-    const formatted = parts.join(' ');
-    return diffMs >= 0 ? `${formatted} left` : `${formatted} overdue`;
-  }
-
-  historyEntries(task: Task | null): TaskActivity[] {
-    return task?.activity_log ?? [];
+    return diffMs >= 0 ? `${parts.join(' ')} left` : `${parts.join(' ')} overdue`;
   }
 
   formatHistoryDate(value: string): string {
@@ -526,31 +632,24 @@ export class TasksPage implements OnInit, OnDestroy {
   }
 
   priorityLabel(priority: Task['priority']): string {
-    if (priority === 'high') {
-      return 'High';
-    }
-
-    if (priority === 'low') {
-      return 'Low';
-    }
-
+    if (priority === 'high') return 'High';
+    if (priority === 'low') return 'Low';
     return 'Medium';
   }
 
-  showCreateFieldError(field: 'title' | 'due_date' | 'subject'): boolean {
+  showBoardFieldError(field: 'title'): boolean {
+    return this.boardValidationTriggered && !this.boardForm.title.trim();
+  }
+
+  showCreateFieldError(field: 'title' | 'due_date' | 'subject' | 'board'): boolean {
     if (!this.createValidationTriggered) {
       return false;
     }
 
-    if (field === 'title') {
-      return !this.createForm.title.trim();
-    }
-
-    if (field === 'due_date') {
-      return !this.createForm.due_date;
-    }
-
-    return !this.createForm.subject;
+    if (field === 'title') return !this.createForm.title.trim();
+    if (field === 'due_date') return !this.createForm.due_date;
+    if (field === 'subject') return !this.createForm.subject;
+    return !this.createForm.board;
   }
 
   private replaceTask(task: Task): void {
@@ -570,10 +669,6 @@ export class TasksPage implements OnInit, OnDestroy {
 
     this.selectedTask.set(updatedTask);
     this.replaceTask(updatedTask);
-  }
-
-  completionButtonLabel(task: Task | null): string {
-    return this.isTaskCompleted(task) ? 'Mark as active' : 'Mark as completed';
   }
 
   private syncTaskProgress(task: Task): Task {
@@ -629,7 +724,6 @@ export class TasksPage implements OnInit, OnDestroy {
         if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
           return value[0];
         }
-
         if (typeof value === 'string') {
           return value;
         }

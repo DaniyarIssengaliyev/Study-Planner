@@ -57,6 +57,30 @@ class Subject(models.Model):
         return self.name
 
 
+class Board(models.Model):
+    title = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='boards',
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='boards',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['title', 'id']
+
+    def __str__(self):
+        return self.title
+
+
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -84,6 +108,13 @@ class Task(models.Model):
     )
 
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='tasks')
+    board = models.ForeignKey(
+        Board,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        null=True,
+        blank=True,
+    )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
