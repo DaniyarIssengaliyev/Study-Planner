@@ -1,16 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {
+  CreateSubjectRequest,
+  CreateSubtaskRequest,
+  CreateTaskRequest,
+  Faculty,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  User,
-  Task,
-  CreateTaskRequest,
-  UpdateTaskRequest,
   Subject,
-  CreateSubjectRequest,
-  Faculty,
+  Subtask,
+  Task,
+  UpdateSubtaskRequest,
+  UpdateTaskRequest,
+  User,
 } from '../models/api.models';
 import { Observable } from 'rxjs';
 
@@ -81,6 +84,24 @@ export class ApiService {
 
   deleteTask(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/tasks/${id}/`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  createSubtask(taskId: number, data: CreateSubtaskRequest): Observable<Subtask> {
+    return this.http.post<Subtask>(`${this.baseUrl}/tasks/${taskId}/subtasks/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  updateSubtask(id: number, data: UpdateSubtaskRequest): Observable<Subtask> {
+    return this.http.put<Subtask>(`${this.baseUrl}/subtasks/${id}/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  deleteSubtask(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/subtasks/${id}/`, {
       headers: this.getAuthHeaders(),
     });
   }

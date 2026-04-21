@@ -15,20 +15,39 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Subject, Task, StudySession, Note, Faculty, Profile
+from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task
 from .serializers import (
     CustomTokenObtainPairSerializer,
     FacultySerializer,
     GoogleLoginSerializer,
+    NoteModelSerializer,
     RegisterSerializer,
+    StudySessionModelSerializer,
     SubjectModelSerializer,
     SubjectSummarySerializer,
+    SubtaskSerializer,
     TaskModelSerializer,
     TaskSimpleSerializer,
-    StudySessionModelSerializer,
-    NoteModelSerializer,
     UserSerializer,
 )
+
+
+def get_user_role(user):
+    if user.is_superuser:
+        return 'superadmin'
+    return getattr(user.profile, 'role', 'student')
+
+
+def get_task_for_user(request, pk):
+    task = get_object_or_404(Task.objects.select_related('subject', 'owner').prefetch_related('subtasks'), pk=pk)
+
+    if get_user_role(request.user) == 'superadmin':
+        return task
+
+    if task.owner_id != request.user.id:
+        return None
+
+    return task
 
 
 class RegisterAPIView(APIView):
@@ -105,13 +124,12 @@ class GoogleLoginAPIView(APIView):
             profile.save()
 
         refresh = RefreshToken.for_user(user)
-
         refresh['username'] = user.username
-        refresh['role'] = getattr(user.profile, 'role', 'student')
+        refresh['role'] = get_user_role(user)
 
         access_token = refresh.access_token
         access_token['username'] = user.username
-        access_token['role'] = getattr(user.profile, 'role', 'student')
+        access_token['role'] = get_user_role(user)
 
         return Response(
             {
@@ -140,7 +158,7 @@ class FacultyListAPIView(APIView):
 
 @api_view(['GET'])
 def task_list_simple(request):
-    if request.user.is_authenticated and getattr(request.user.profile, 'role', 'student') != 'superadmin':
+    if request.user.is_authenticated and get_user_role(request.user) != 'superadmin':
         tasks = Task.objects.filter(owner=request.user)
     else:
         tasks = Task.objects.all()
@@ -181,9 +199,9 @@ class SubjectListCreateAPIView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        if getattr(request.user.profile, 'role', 'student') != 'superadmin':
+        if get_user_role(request.user) != 'superadmin':
             return Response(
-                {'detail': 'Только superadmin может добавлять предметы.'},
+                {'detail': 'Only superadmin can add subjects.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -198,9 +216,9 @@ class SubjectDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
-        if getattr(request.user.profile, 'role', 'student') != 'superadmin':
+        if get_user_role(request.user) != 'superadmin':
             return Response(
-                {'detail': 'Только superadmin может удалять предметы.'},
+                {'detail': 'Only superadmin can delete subjects.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -215,10 +233,10 @@ class TaskListCreateAPIView(APIView):
     def get(self, request):
         update_overdue_tasks()
 
-        if getattr(request.user.profile, 'role', 'student') == 'superadmin':
-            tasks = Task.objects.all().select_related('subject', 'owner')
+        if get_user_role(request.user) == 'superadmin':
+            tasks = Task.objects.all().select_related('subject', 'owner').prefetch_related('subtasks')
         else:
-            tasks = Task.objects.filter(owner=request.user).select_related('subject', 'owner')
+            tasks = Task.objects.filter(owner=request.user).select_related('subject', 'owner').prefetch_related('subtasks')
 
         serializer = TaskModelSerializer(tasks, many=True)
         return Response(serializer.data)
@@ -234,20 +252,9 @@ class TaskListCreateAPIView(APIView):
 class TaskDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, request, pk):
-        task = get_object_or_404(Task.objects.select_related('subject', 'owner'), pk=pk)
-
-        if getattr(request.user.profile, 'role', 'student') == 'superadmin':
-            return task
-
-        if task.owner_id != request.user.id:
-            return None
-
-        return task
-
     def get(self, request, pk):
         update_overdue_tasks()
-        task = self.get_object(request, pk)
+        task = get_task_for_user(request, pk)
 
         if task is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -256,7 +263,7 @@ class TaskDetailAPIView(APIView):
         return Response(serializer.data)
 
     def put(self, request, pk):
-        task = self.get_object(request, pk)
+        task = get_task_for_user(request, pk)
 
         if task is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -268,12 +275,64 @@ class TaskDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        task = self.get_object(request, pk)
+        task = get_task_for_user(request, pk)
 
         if task is None:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SubtaskListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, task_pk):
+        task = get_task_for_user(request, task_pk)
+
+        if task is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SubtaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(task=task, order=task.subtasks.count())
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubtaskDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, request, pk):
+        subtask = get_object_or_404(Subtask.objects.select_related('task__owner', 'task__subject'), pk=pk)
+
+        if get_user_role(request.user) == 'superadmin':
+            return subtask
+
+        if subtask.task.owner_id != request.user.id:
+            return None
+
+        return subtask
+
+    def put(self, request, pk):
+        subtask = self.get_object(request, pk)
+
+        if subtask is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SubtaskSerializer(subtask, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save(task=subtask.task)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        subtask = self.get_object(request, pk)
+
+        if subtask is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        subtask.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

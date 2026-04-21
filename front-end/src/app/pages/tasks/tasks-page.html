@@ -1,65 +1,276 @@
-<h2>Tasks</h2>
+<div class="tasks-shell">
+  <div class="tasks-topbar">
+    <div>
+      <h2>Task Board</h2>
+      <p>Move tasks between columns and edit details in place.</p>
+    </div>
 
-<div *ngIf="errorMessage()" class="error-message">{{ errorMessage() }}</div>
-<div *ngIf="successMessage()" class="success-message">{{ successMessage() }}</div>
+    <button
+      class="primary-button button-animated"
+      type="button"
+      (click)="openCreateModal()"
+      [disabled]="subjects().length === 0 || isLoadingSubjects()"
+    >
+      New Task
+    </button>
+  </div>
 
-<div class="task-form">
-  <input [(ngModel)]="newTask.title" name="title" placeholder="Title" />
+  <div *ngIf="errorMessage()" class="message error-message">{{ errorMessage() }}</div>
+  <div *ngIf="successMessage()" class="message success-message">{{ successMessage() }}</div>
 
-  <textarea
-    [(ngModel)]="newTask.description"
-    name="description"
-    placeholder="Description"
-  ></textarea>
+  <p *ngIf="isLoadingSubjects()">Loading subjects...</p>
 
-  <input [(ngModel)]="newTask.dueDate" name="dueDate" type="date" />
+  <p *ngIf="!isLoadingSubjects() && subjects().length === 0" class="empty-banner">
+    No subjects found. Ask superadmin to add subjects first.
+  </p>
 
-  <select [(ngModel)]="newTask.priority" name="priority">
-    <option value="low">Low</option>
-    <option value="medium">Medium</option>
-    <option value="high">High</option>
-  </select>
+  <div *ngIf="isLoadingTasks()" class="empty-board">Loading tasks...</div>
 
-  <select [(ngModel)]="newTask.status" name="status">
-    <option value="todo">To Do</option>
-    <option value="in_progress">In Progress</option>
-    <option value="completed">Completed</option>
-  </select>
+  <div *ngIf="!isLoadingTasks()" class="board">
+    @for (column of columns; track column.key) {
+      <section
+        class="board-column"
+        [class.board-column-active]="dragOverColumn() === column.key"
+        (dragover)="allowDrop($event, column.key)"
+        (dragleave)="leaveDropZone(column.key)"
+        (drop)="dropToColumn(column.key)"
+      >
+        <header class="column-header">
+          <h3>{{ column.title }}</h3>
+          <span>{{ tasksByStatus(column.key).length }}</span>
+        </header>
 
-  <select [(ngModel)]="newTask.subject" name="subject" [disabled]="isLoadingSubjects()">
-    <option [ngValue]="null">Select subject</option>
-    @for (subject of subjects(); track subject.id) {
-      <option [ngValue]="subject.id">{{ subject.name }}</option>
+        <div class="column-body">
+          @for (task of tasksByStatus(column.key); track task.id) {
+            <article
+              class="task-card"
+              [class.task-card-dragging]="draggedTaskId() === task.id"
+              draggable="true"
+              (dragstart)="onDragStart(task.id)"
+              (dragend)="onDragEnd()"
+              (click)="openTaskDetails(task)"
+            >
+              <div class="task-card-head">
+                <h4>{{ task.title }}</h4>
+                <span
+                  class="priority-badge"
+                  [class.high]="task.priority === 'high'"
+                  [class.low]="task.priority === 'low'"
+                >
+                  {{ priorityLabel(task.priority) }}
+                </span>
+              </div>
+
+              <p class="task-description">{{ task.description || 'No description' }}</p>
+
+              <div class="task-meta">
+                <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
+                <span>{{ task.due_date }}</span>
+              </div>
+
+              <div class="task-progress" *ngIf="subtaskCount(task) > 0">
+                {{ completedSubtasks(task) }}/{{ subtaskCount(task) }} subtasks
+              </div>
+            </article>
+          }
+
+          <div *ngIf="tasksByStatus(column.key).length === 0" class="empty-column">No tasks</div>
+        </div>
+      </section>
     }
-  </select>
-
-  <button
-    type="button"
-    (click)="createTask()"
-    [disabled]="subjects().length === 0 || isLoadingSubjects()"
-  >
-    Create Task
-  </button>
+  </div>
 </div>
 
-<p *ngIf="isLoadingSubjects()">Loading subjects...</p>
-
-<p *ngIf="!isLoadingSubjects() && subjects().length === 0">
-  No subjects found. Ask superadmin to add subjects first.
-</p>
-
-<div *ngIf="!isLoadingTasks()" class="task-list">
-  @for (task of tasks(); track task.id) {
-    <div class="task-card">
-      <h3>{{ task.title }}</h3>
-      <p>{{ task.description }}</p>
-      <p>Due: {{ task.due_date }}</p>
-      <p>Status: {{ task.status }}</p>
-      <p>Priority: {{ task.priority }}</p>
-      <p>Subject: {{ task.subject_name || ('ID: ' + task.subject) }}</p>
-
-      <button type="button" (click)="updateTask(task, $event)">Mark Completed</button>
-      <button type="button" (click)="deleteTask(task.id, $event)">Delete</button>
+<div *ngIf="isCreateModalOpen()" class="modal-backdrop" (click)="closeCreateModal()">
+  <div class="modal-card modal-enter" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Create Task</h3>
+      <button type="button" class="icon-button button-animated" (click)="closeCreateModal()">
+        ×
+      </button>
     </div>
-  }
+
+    <div class="modal-form">
+      <label>
+        <span>Title</span>
+        <input [(ngModel)]="createForm.title" name="create_title" type="text" />
+      </label>
+
+      <label>
+        <span>Description</span>
+        <textarea [(ngModel)]="createForm.description" name="create_description"></textarea>
+      </label>
+
+      <div class="modal-grid">
+        <label>
+          <span>Due date</span>
+          <input [(ngModel)]="createForm.due_date" name="create_due_date" type="date" />
+        </label>
+
+        <label>
+          <span>Priority</span>
+          <select [(ngModel)]="createForm.priority" name="create_priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modal-grid">
+        <label>
+          <span>Status</span>
+          <select [(ngModel)]="createForm.status" name="create_status">
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Subject</span>
+          <select [(ngModel)]="createForm.subject" name="create_subject">
+            @for (subject of subjects(); track subject.id) {
+              <option [ngValue]="subject.id">{{ subject.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="ghost-button button-animated" (click)="closeCreateModal()">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="primary-button button-animated"
+        (click)="createTask()"
+        [disabled]="isSaving()"
+      >
+        {{ isSaving() ? 'Saving...' : 'Create' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isTaskModalOpen()" class="modal-backdrop" (click)="closeTaskDetails()">
+  <div class="modal-card modal-large modal-enter" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Task Details</h3>
+      <button type="button" class="icon-button button-animated" (click)="closeTaskDetails()">
+        ×
+      </button>
+    </div>
+
+    <div *ngIf="selectedTask() as task" class="task-modal-layout">
+      <div class="modal-form">
+        <label>
+          <span>Title</span>
+          <input [(ngModel)]="taskForm.title" name="edit_title" type="text" />
+        </label>
+
+        <label>
+          <span>Description</span>
+          <textarea [(ngModel)]="taskForm.description" name="edit_description"></textarea>
+        </label>
+
+        <div class="modal-grid">
+          <label>
+            <span>Due date</span>
+            <input [(ngModel)]="taskForm.due_date" name="edit_due_date" type="date" />
+          </label>
+
+          <label>
+            <span>Priority</span>
+            <select [(ngModel)]="taskForm.priority" name="edit_priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            <span>Status</span>
+            <select [(ngModel)]="taskForm.status" name="edit_status">
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Subject</span>
+            <select [(ngModel)]="taskForm.subject" name="edit_subject">
+              @for (subject of subjects(); track subject.id) {
+                <option [ngValue]="subject.id">{{ subject.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-actions modal-actions-left">
+          <button
+            type="button"
+            class="primary-button button-animated"
+            (click)="saveTaskDetails()"
+            [disabled]="isSaving()"
+          >
+            {{ isSaving() ? 'Saving...' : 'Save changes' }}
+          </button>
+          <button type="button" class="danger-button button-animated" (click)="deleteTask(task.id)">
+            Delete task
+          </button>
+        </div>
+      </div>
+
+      <aside class="subtasks-panel">
+        <div class="subtasks-header">
+          <h4>Subtasks</h4>
+          <span>{{ completedSubtasks(task) }}/{{ subtaskCount(task) }}</span>
+        </div>
+
+        <div class="subtask-create">
+          <input
+            [(ngModel)]="newSubtaskTitle"
+            name="new_subtask_title"
+            type="text"
+            placeholder="Add subtask"
+          />
+          <button type="button" class="primary-button button-animated" (click)="addSubtask()">
+            Add
+          </button>
+        </div>
+
+        <div class="subtask-list">
+          @for (subtask of task.subtasks ?? []; track subtask.id) {
+            <div class="subtask-item">
+              <label class="subtask-check">
+                <input
+                  type="checkbox"
+                  [checked]="subtask.is_completed"
+                  (change)="toggleSubtask(subtask, $any($event.target).checked)"
+                />
+                <span [class.done]="subtask.is_completed">{{ subtask.title }}</span>
+              </label>
+
+              <button
+                type="button"
+                class="subtask-delete button-animated"
+                (click)="deleteSubtask(subtask.id)"
+              >
+                Delete
+              </button>
+            </div>
+          }
+
+          <div *ngIf="(task.subtasks ?? []).length === 0" class="empty-subtasks">
+            No subtasks yet.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
 </div>

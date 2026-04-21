@@ -10,12 +10,7 @@
     <form (ngSubmit)="submit()" class="login-form">
       <label class="field-label">
         <span>Логин *</span>
-        <input
-          [(ngModel)]="form.login"
-          name="login"
-          type="text"
-          placeholder="Email или username"
-        />
+        <input [(ngModel)]="form.login" name="login" type="text" placeholder="Email или username" />
       </label>
 
       <label class="field-label">
@@ -41,9 +36,11 @@
       <div id="google-signin-button"></div>
     </div>
 
-    <p class="auth-link">
-      Нет аккаунта?
-      <a routerLink="/register">Зарегистрироваться</a>
-    </p>
+    <div class="auth-link">
+      <p>
+        Нет аккаунта?
+        <a routerLink="/register">Зарегистрироваться</a>
+      </p>
+    </div>
   </div>
 </div>

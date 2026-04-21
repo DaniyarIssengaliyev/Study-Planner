@@ -23,6 +23,12 @@ class Profile(models.Model):
     faculty = models.ForeignKey(Faculty, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
     google_sub = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
+    @property
+    def effective_role(self):
+        if self.user.is_superuser:
+            return 'superadmin'
+        return self.role
+
     def __str__(self):
         return f'{self.user.username} ({self.role})'
 
@@ -86,6 +92,19 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Subtask(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    title = models.CharField(max_length=200)
+    is_completed = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f'{self.task.title} - {self.title}'
 
 
 class StudySession(models.Model):

@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Faculty, Profile, Subject, Task, StudySession, Note
+from .models import Faculty, Note, Profile, StudySession, Subject, Subtask, Task
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -13,10 +13,14 @@ class FacultySerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     faculty = FacultySerializer(read_only=True)
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = ['full_name', 'role', 'faculty', 'google_sub']
+
+    def get_role(self, obj):
+        return obj.effective_role
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,12 +42,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError('Пользователь с таким username уже существует.')
+            raise serializers.ValidationError('User with this username already exists.')
         return value
 
     def validate_email(self, value):
         if value and User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('Пользователь с таким email уже существует.')
+            raise serializers.ValidationError('User with this email already exists.')
         return value
 
     def create(self, validated_data):
@@ -51,7 +55,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         faculty_id = validated_data.pop('faculty_id', None)
 
         user = User.objects.create_user(**validated_data)
-
+        
         user.first_name = full_name.strip()
         user.save()
 
@@ -81,7 +85,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
-        token['role'] = getattr(user.profile, 'role', 'student')
+        token['role'] = 'superadmin' if user.is_superuser else getattr(user.profile, 'role', 'student')
         return token
 
     def validate(self, attrs):
@@ -118,9 +122,17 @@ class SubjectModelSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class SubtaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subtask
+        fields = ['id', 'task', 'title', 'is_completed', 'order']
+        read_only_fields = ['task']
+
+
 class TaskModelSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     owner_username = serializers.CharField(source='owner.username', read_only=True)
+    subtasks = SubtaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -135,8 +147,9 @@ class TaskModelSerializer(serializers.ModelSerializer):
             'subject_name',
             'owner',
             'owner_username',
+            'subtasks',
         ]
-        read_only_fields = ['owner', 'owner_username']
+        read_only_fields = ['owner', 'owner_username', 'subtasks']
 
 
 class StudySessionModelSerializer(serializers.ModelSerializer):

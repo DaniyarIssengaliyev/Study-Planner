@@ -1,8 +1,9 @@
 .login-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
+  overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(249, 115, 22, 0.16), transparent 30%),
     linear-gradient(135deg, #fff7ed 0%, #ffedd5 48%, #ffffff 100%);
@@ -106,6 +107,7 @@
 
 .auth-link {
   margin-top: 20px;
+  margin-bottom: -25px;
   text-align: center;
 }
 

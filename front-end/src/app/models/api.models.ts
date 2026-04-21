@@ -24,6 +24,14 @@ export interface Subject {
   description?: string;
 }
 
+export interface Subtask {
+  id: number;
+  task: number;
+  title: string;
+  is_completed: boolean;
+  order: number;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -35,6 +43,7 @@ export interface Task {
   subject_name?: string;
   owner?: number;
   owner_username?: string;
+  subtasks?: Subtask[];
 }
 
 export interface LoginRequest {
@@ -71,4 +80,14 @@ export interface CreateSubjectRequest {
   name: string;
   color?: string;
   description?: string;
+}
+
+export interface CreateSubtaskRequest {
+  title: string;
+}
+
+export interface UpdateSubtaskRequest {
+  title?: string;
+  is_completed?: boolean;
+  order?: number;
 }

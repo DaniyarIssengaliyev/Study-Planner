@@ -14,22 +14,37 @@
     <form (ngSubmit)="submit()" class="register-form">
       <label class="field-label">
         <span>Полное имя *</span>
-        <input [(ngModel)]="form.full_name" name="full_name" type="text" placeholder="Иван Иванов" />
+        <input
+          [(ngModel)]="form.full_name"
+          name="full_name"
+          type="text"
+          placeholder="Фамилия Имя"
+        />
       </label>
 
       <label class="field-label">
         <span>Username *</span>
-        <input [(ngModel)]="form.username" name="username" type="text" placeholder="ivanov" />
+        <input [(ngModel)]="form.username" name="username" type="text" placeholder="username" />
       </label>
 
       <label class="field-label">
         <span>Email *</span>
-        <input [(ngModel)]="form.email" name="email" type="email" placeholder="student@example.com" />
+        <input
+          [(ngModel)]="form.email"
+          name="email"
+          type="email"
+          placeholder="student@example.com"
+        />
       </label>
 
       <label class="field-label">
         <span>Пароль *</span>
-        <input [(ngModel)]="form.password" name="password" type="password" placeholder="Минимум 6 символов" />
+        <input
+          [(ngModel)]="form.password"
+          name="password"
+          type="password"
+          placeholder="Минимум 6 символов"
+        />
       </label>
 
       <label class="field-label">
@@ -47,9 +62,11 @@
       </button>
     </form>
 
-    <p class="auth-link">
-      Уже есть аккаунт?
-      <a routerLink="/login">Войти</a>
-    </p>
+    <div class="auth-link">
+      <p>
+        Уже есть аккаунт?
+        <a routerLink="/login">Войти</a>
+      </p>
+    </div>
   </div>
 </div>
