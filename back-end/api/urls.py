@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     FacultyListAPIView,
+    GoogleLoginAPIView,
     LoginAPIView,
     MeAPIView,
     NoteListAPIView,
@@ -17,6 +18,7 @@ from .views import (
 urlpatterns = [
     path('auth/register/', RegisterAPIView.as_view(), name='register'),
     path('auth/login/', LoginAPIView.as_view(), name='login'),
+    path('auth/google/', GoogleLoginAPIView.as_view(), name='google-login'),
     path('auth/me/', MeAPIView.as_view(), name='me'),
     path('faculties/', FacultyListAPIView.as_view(), name='faculty-list'),
 

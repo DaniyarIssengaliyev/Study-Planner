@@ -1,17 +1,26 @@
+import secrets
+
+from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Subject, Task, StudySession, Note, Faculty
+from django.conf import settings
+
+from .models import Subject, Task, StudySession, Note, Faculty, Profile
 from .serializers import (
     CustomTokenObtainPairSerializer,
     FacultySerializer,
+    GoogleLoginSerializer,
     RegisterSerializer,
     SubjectModelSerializer,
     SubjectSummarySerializer,
@@ -37,6 +46,81 @@ class RegisterAPIView(APIView):
 class LoginAPIView(TokenObtainPairView):
     permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class GoogleLoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = GoogleLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        credential = serializer.validated_data['credential']
+
+        try:
+            google_user = id_token.verify_oauth2_token(
+                credential,
+                google_requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
+            )
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid Google token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        google_sub = google_user.get('sub')
+        email = google_user.get('email')
+        name = google_user.get('name') or email
+        email_verified = google_user.get('email_verified', False)
+
+        if not google_sub or not email or not email_verified:
+            return Response(
+                {'detail': 'Google account data is incomplete.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        profile = Profile.objects.filter(google_sub=google_sub).select_related('user').first()
+
+        if profile:
+            user = profile.user
+        else:
+            user = User.objects.filter(email=email).first()
+
+            if not user:
+                base_username = email.split('@')[0]
+                username = base_username
+
+                while User.objects.filter(username=username).exists():
+                    username = f'{base_username}_{secrets.token_hex(3)}'
+
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=User.objects.make_random_password(),
+                )
+
+            profile = user.profile
+            profile.google_sub = google_sub
+            profile.full_name = name
+            profile.save()
+
+        refresh = RefreshToken.for_user(user)
+
+        refresh['username'] = user.username
+        refresh['role'] = getattr(user.profile, 'role', 'student')
+
+        access_token = refresh.access_token
+        access_token['username'] = user.username
+        access_token['role'] = getattr(user.profile, 'role', 'student')
+
+        return Response(
+            {
+                'refresh': str(refresh),
+                'access': str(access_token),
+                'user': UserSerializer(user).data,
+            }
+        )
 
 
 class MeAPIView(APIView):

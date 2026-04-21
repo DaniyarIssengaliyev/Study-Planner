@@ -16,7 +16,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['full_name', 'role', 'faculty']
+        fields = ['full_name', 'role', 'faculty', 'google_sub']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -54,8 +54,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         user = User.objects.create_user(**validated_data)
 
-        first_name = full_name.strip()
-        user.first_name = first_name
+        user.first_name = full_name.strip()
         user.save()
 
         profile = user.profile
@@ -67,6 +66,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         profile.save()
         return user
+
+
+class GoogleLoginSerializer(serializers.Serializer):
+    credential = serializers.CharField()
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

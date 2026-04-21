@@ -108,6 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+GOOGLE_CLIENT_ID = '1023483995845-v6ofsa2n0i1g8iiqukkpejrraeffi1ec.apps.googleusercontent.com'
+
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
