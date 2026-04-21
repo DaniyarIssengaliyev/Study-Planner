@@ -56,6 +56,32 @@
   cursor: not-allowed;
 }
 
+.divider {
+  position: relative;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.divider span {
+  position: relative;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.google-button-wrap {
+  display: grid;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 .error-message {
   margin-bottom: 12px;
   padding: 10px 12px;

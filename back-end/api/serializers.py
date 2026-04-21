@@ -106,10 +106,23 @@ class SubjectModelSerializer(serializers.ModelSerializer):
 
 class TaskModelSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'due_date', 'status', 'priority', 'subject', 'subject_name']
+        fields = [
+            'id',
+            'title',
+            'description',
+            'due_date',
+            'status',
+            'priority',
+            'subject',
+            'subject_name',
+            'owner',
+            'owner_username',
+        ]
+        read_only_fields = ['owner', 'owner_username']
 
 
 class StudySessionModelSerializer(serializers.ModelSerializer):

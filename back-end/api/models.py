@@ -78,6 +78,11 @@ class Task(models.Model):
     )
 
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='tasks')
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+    )
 
     def __str__(self):
         return self.title

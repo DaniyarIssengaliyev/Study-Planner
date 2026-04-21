@@ -32,6 +32,8 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   subject: number;
   subject_name?: string;
+  owner?: number;
+  owner_username?: string;
 }
 
 export interface LoginRequest {

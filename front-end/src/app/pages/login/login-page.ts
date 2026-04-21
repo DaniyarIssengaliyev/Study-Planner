@@ -1,8 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, NgZone, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleCredentialResponse } from '../../models/google.types';
+
+const GOOGLE_CLIENT_ID =
+  '1023483995845-v6ofsa2n0i1g8iiqukkpejrraeffi1ec.apps.googleusercontent.com';
 
 @Component({
   selector: 'app-login-page',
@@ -11,9 +15,10 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
-export class LoginPage {
+export class LoginPage implements AfterViewInit, OnDestroy {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private zone = inject(NgZone);
 
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
@@ -22,6 +27,17 @@ export class LoginPage {
     username: '',
     password: '',
   };
+
+  ngAfterViewInit(): void {
+    this.renderGoogleButton();
+  }
+
+  ngOnDestroy(): void {
+    const container = document.getElementById('google-signin-button');
+    if (container) {
+      container.innerHTML = '';
+    }
+  }
 
   submit(): void {
     if (!this.form.username.trim() || !this.form.password.trim()) {
@@ -48,5 +64,54 @@ export class LoginPage {
           this.isLoading.set(false);
         },
       });
+  }
+
+  private renderGoogleButton(): void {
+    const googleApi = window.google?.accounts?.id;
+    const container = document.getElementById('google-signin-button');
+
+    if (!googleApi || !container || !GOOGLE_CLIENT_ID) {
+      return;
+    }
+
+    container.innerHTML = '';
+
+    googleApi.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (response: GoogleCredentialResponse) => {
+        if (!response.credential) {
+          this.zone.run(() => {
+            this.errorMessage.set('Google login failed');
+          });
+          return;
+        }
+
+        this.zone.run(() => {
+          this.isLoading.set(true);
+          this.errorMessage.set(null);
+
+          this.auth.googleLogin(response.credential).subscribe({
+            next: () => {
+              this.isLoading.set(false);
+              this.router.navigateByUrl('/dashboard');
+            },
+            error: (err) => {
+              console.error('Google login error:', err);
+              this.errorMessage.set('Google login failed');
+              this.isLoading.set(false);
+            },
+          });
+        });
+      },
+    });
+
+    googleApi.renderButton(container, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      width: 320,
+    });
   }
 }

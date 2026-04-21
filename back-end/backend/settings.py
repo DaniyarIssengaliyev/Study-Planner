@@ -21,6 +21,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+GOOGLE_CLIENT_ID = '1023483995845-v6ofsa2n0i1g8iiqukkpejrraeffi1ec.apps.googleusercontent.com'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -93,6 +95,7 @@ DATABASES = {
     }
 }
 
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -107,8 +110,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-GOOGLE_CLIENT_ID = '1023483995845-v6ofsa2n0i1g8iiqukkpejrraeffi1ec.apps.googleusercontent.com'
 
 LANGUAGE_CODE = 'en-us'
 

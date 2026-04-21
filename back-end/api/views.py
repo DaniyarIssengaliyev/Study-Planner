@@ -1,5 +1,6 @@
 import secrets
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -13,8 +14,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
-from django.conf import settings
 
 from .models import Subject, Task, StudySession, Note, Faculty, Profile
 from .serializers import (
@@ -97,7 +96,7 @@ class GoogleLoginAPIView(APIView):
                 user = User.objects.create_user(
                     username=username,
                     email=email,
-                    password=User.objects.make_random_password(),
+                    password=secrets.token_urlsafe(24),
                 )
 
             profile = user.profile
@@ -113,6 +112,7 @@ class GoogleLoginAPIView(APIView):
         access_token = refresh.access_token
         access_token['username'] = user.username
         access_token['role'] = getattr(user.profile, 'role', 'student')
+
 
         return Response(
             {
@@ -141,7 +141,11 @@ class FacultyListAPIView(APIView):
 
 @api_view(['GET'])
 def task_list_simple(request):
-    tasks = Task.objects.all()
+    if request.user.is_authenticated and getattr(request.user.profile, 'role', 'student') != 'superadmin':
+        tasks = Task.objects.filter(owner=request.user)
+    else:
+        tasks = Task.objects.all()
+
     serializer = TaskSimpleSerializer(tasks, many=True)
     return Response(serializer.data)
 
@@ -170,6 +174,8 @@ def update_overdue_tasks():
 
 
 class SubjectListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         subjects = Subject.objects.all()
         serializer = SubjectModelSerializer(subjects, many=True)
@@ -184,45 +190,77 @@ class SubjectListCreateAPIView(APIView):
 
 
 class TaskListCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         update_overdue_tasks()
-        tasks = Task.objects.all()
+
+        if getattr(request.user.profile, 'role', 'student') == 'superadmin':
+            tasks = Task.objects.all().select_related('subject', 'owner')
+        else:
+            tasks = Task.objects.filter(owner=request.user).select_related('subject', 'owner')
+
         serializer = TaskModelSerializer(tasks, many=True)
         return Response(serializer.data)
 
     def post(self, request):
         serializer = TaskModelSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(owner=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TaskDetailAPIView(APIView):
-    def get_object(self, pk):
-        return get_object_or_404(Task, pk=pk)
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, request, pk):
+        task = get_object_or_404(Task.objects.select_related('subject', 'owner'), pk=pk)
+
+        if getattr(request.user.profile, 'role', 'student') == 'superadmin':
+            return task
+
+        if task.owner_id != request.user.id:
+            return None
+
+        return task
 
     def get(self, request, pk):
         update_overdue_tasks()
-        task = self.get_object(pk)
+        task = self.get_object(request, pk)
+
+        if task is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
         serializer = TaskModelSerializer(task)
         return Response(serializer.data)
 
     def put(self, request, pk):
-        task = self.get_object(pk)
+        task = self.get_object(request, pk)
+
+        if task is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
         serializer = TaskModelSerializer(task, data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(owner=task.owner)
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        task = self.get_object(pk)
+        task = self.get_object(request, pk)
+
+        if task is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
         task.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class StudySessionListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         sessions = StudySession.objects.all()
         serializer = StudySessionModelSerializer(sessions, many=True)
@@ -230,6 +268,8 @@ class StudySessionListAPIView(APIView):
 
 
 class NoteListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         notes = Note.objects.all()
         serializer = NoteModelSerializer(notes, many=True)

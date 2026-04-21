@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { LoginRequest, LoginResponse, RegisterRequest, User } from '../models/api.models';
+import '../models/google.types';
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +28,15 @@ export class AuthService {
     );
   }
 
+  googleLogin(credential: string): Observable<LoginResponse> {
+    return this.api.googleLogin(credential).pipe(
+      tap((response) => {
+        localStorage.setItem(this.tokenKey, response.access);
+        this.currentUser.set(response.user);
+      }),
+    );
+  }
+
   loadMe(): Observable<User> {
     return this.api.getMe().pipe(
       tap((user) => {
@@ -38,6 +48,10 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.currentUser.set(null);
+
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.disableAutoSelect();
+    }
   }
 
   getToken(): string | null {

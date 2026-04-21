@@ -38,6 +38,12 @@ export class ApiService {
     return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login/`, data);
   }
 
+  googleLogin(credential: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/google/`, {
+      credential,
+    });
+  }
+
   getMe(): Observable<User> {
     return this.http.get<User>(`${this.baseUrl}/auth/me/`, {
       headers: this.getAuthHeaders(),
@@ -45,30 +51,44 @@ export class ApiService {
   }
 
   getTasks(): Observable<Task[]> {
-    return this.http.get<Task[]>(`${this.baseUrl}/tasks/`);
+    return this.http.get<Task[]>(`${this.baseUrl}/tasks/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   getTaskById(id: number): Observable<Task> {
-    return this.http.get<Task>(`${this.baseUrl}/tasks/${id}/`);
+    return this.http.get<Task>(`${this.baseUrl}/tasks/${id}/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   createTask(data: CreateTaskRequest): Observable<Task> {
-    return this.http.post<Task>(`${this.baseUrl}/tasks/`, data);
+    return this.http.post<Task>(`${this.baseUrl}/tasks/`, data, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   updateTask(id: number, data: UpdateTaskRequest): Observable<Task> {
-    return this.http.put<Task>(`${this.baseUrl}/tasks/${id}/`, data);
+    return this.http.put<Task>(`${this.baseUrl}/tasks/${id}/`, data, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   deleteTask(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/tasks/${id}/`);
+    return this.http.delete<void>(`${this.baseUrl}/tasks/${id}/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   getSubjects(): Observable<Subject[]> {
-    return this.http.get<Subject[]>(`${this.baseUrl}/subjects/`);
+    return this.http.get<Subject[]>(`${this.baseUrl}/subjects/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   createSubject(data: CreateSubjectRequest): Observable<Subject> {
-    return this.http.post<Subject>(`${this.baseUrl}/subjects/`, data);
+    return this.http.post<Subject>(`${this.baseUrl}/subjects/`, data, {
+      headers: this.getAuthHeaders(),
+    });
   }
 }
