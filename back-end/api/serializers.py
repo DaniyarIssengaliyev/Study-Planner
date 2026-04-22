@@ -84,8 +84,9 @@ class ProfileSettingsSerializer(serializers.Serializer):
 
         user.save()
 
-        profile.faculty_id = self.validated_data.get('faculty_id')
-        profile.save(update_fields=['faculty'])
+        if 'faculty_id' in self.validated_data:
+            profile.faculty_id = self.validated_data['faculty_id']
+            profile.save(update_fields=['faculty'])
 
         return user
 
