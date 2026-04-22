@@ -1,7 +1,7 @@
 <div class="login-page">
   <div class="login-card">
-    <h2>Вход</h2>
-    <p>Войдите в Study Planner.</p>
+    <h2>Login</h2>
+    <p>To Study Planner.</p>
 
     <div *ngIf="errorMessage()" class="error-message">
       {{ errorMessage() }}
@@ -9,27 +9,27 @@
 
     <form (ngSubmit)="submit()" class="login-form">
       <label class="field-label">
-        <span>Логин *</span>
-        <input [(ngModel)]="form.login" name="login" type="text" placeholder="Email или username" />
+        <span>Login *</span>
+        <input [(ngModel)]="form.login" name="login" type="text" placeholder="Email or username" />
       </label>
 
       <label class="field-label">
-        <span>Пароль *</span>
+        <span>Password *</span>
         <input
           [(ngModel)]="form.password"
           name="password"
           type="password"
-          placeholder="Введите пароль"
+          placeholder="Enter password"
         />
       </label>
 
       <button type="submit" [disabled]="isLoading()">
-        {{ isLoading() ? 'Входим...' : 'Войти' }}
+        {{ isLoading() ? 'Loading...' : 'Enter' }}
       </button>
     </form>
 
     <div class="divider">
-      <span>или</span>
+      <span>or</span>
     </div>
 
     <div class="google-button-wrap">
@@ -38,8 +38,8 @@
 
     <div class="auth-link">
       <p>
-        Нет аккаунта?
-        <a routerLink="/register">Зарегистрироваться</a>
+        Do not have an account?
+        <a routerLink="/register">Register</a>
       </p>
     </div>
   </div>
