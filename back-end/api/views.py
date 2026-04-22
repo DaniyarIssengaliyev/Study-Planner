@@ -306,29 +306,41 @@ class FacultyOverviewAPIView(APIView):
 
     def get(self, request):
         queryset = Faculty.objects.all().order_by('name')
+        user_role = get_user_role(request.user)
 
-        if get_user_role(request.user) != 'superadmin':
+        if user_role != 'superadmin':
             faculty_id = get_user_faculty_id(request.user)
             if not faculty_id:
                 return Response([], status=status.HTTP_200_OK)
             queryset = queryset.filter(pk=faculty_id)
 
         faculties = list(queryset.prefetch_related('subjects'))
-        students_queryset = (
-            User.objects.filter(is_superuser=False, profile__role='student', profile__faculty__in=faculties)
-            .select_related('profile__faculty')
-            .annotate(
-                boards_count=Count('boards', distinct=True),
-                tasks_count=Count('tasks', distinct=True),
-                completed_tasks_count=Count('tasks', filter=Q(tasks__status='completed'), distinct=True),
-                overdue_tasks_count=Count(
-                    'tasks',
-                    filter=Q(tasks__status='overdue') | Q(tasks__status='completed', tasks__completed_at__gt=models.F('tasks__due_date')),
-                    distinct=True,
-                ),
-            )
-            .order_by('profile__full_name', 'username')
+        students_queryset = User.objects.filter(
+            is_superuser=False,
+            profile__role='student',
+            profile__faculty__in=faculties,
         )
+
+        if user_role == 'superadmin':
+            students_queryset = (
+                students_queryset.select_related('profile__faculty')
+                .annotate(
+                    boards_count=Count('boards', distinct=True),
+                    tasks_count=Count('tasks', distinct=True),
+                    completed_tasks_count=Count('tasks', filter=Q(tasks__status='completed'), distinct=True),
+                    overdue_tasks_count=Count(
+                        'tasks',
+                        filter=Q(tasks__status='overdue') | Q(tasks__status='completed', tasks__completed_at__gt=models.F('tasks__due_date')),
+                        distinct=True,
+                    ),
+                )
+                .order_by('profile__full_name', 'username')
+            )
+        else:
+            students_queryset = students_queryset.select_related('profile__faculty').order_by(
+                'profile__full_name',
+                'username',
+            )
 
         students_by_faculty_id = {}
         for student in students_queryset:
@@ -339,10 +351,10 @@ class FacultyOverviewAPIView(APIView):
                     'full_name': student.profile.full_name,
                     'faculty_id': student.profile.faculty_id,
                     'faculty_name': student.profile.faculty.name if student.profile.faculty else None,
-                    'boards_count': student.boards_count,
-                    'tasks_count': student.tasks_count,
-                    'completed_tasks_count': student.completed_tasks_count,
-                    'overdue_tasks_count': student.overdue_tasks_count,
+                    'boards_count': getattr(student, 'boards_count', None),
+                    'tasks_count': getattr(student, 'tasks_count', None),
+                    'completed_tasks_count': getattr(student, 'completed_tasks_count', None),
+                    'overdue_tasks_count': getattr(student, 'overdue_tasks_count', None),
                 }
             )
 

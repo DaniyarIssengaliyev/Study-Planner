@@ -1,13 +1,152 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --bg-soft: #eef2f7;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #dbe3ee;
+  --border-strong: #c9d4e3;
+  --text: #142033;
+  --text-soft: #5d6b82;
+  --text-faint: #7d899b;
+  --accent: #1f6feb;
+  --accent-soft: #eaf2ff;
+  --accent-strong: #175fd1;
+  --success: #0f9f6e;
+  --success-soft: #e8faf3;
+  --danger: #c44949;
+  --danger-soft: #fff0f0;
+  --warning: #d48a18;
+  --warning-soft: #fff8e8;
+  --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 18px 46px rgba(15, 23, 42, 0.08);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 14px;
+  --motion-fast: 0.22s;
+  --motion-base: 0.32s;
+  --motion-slow: 0.46s;
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --hover-lift-sm: translateY(-2px);
+  --hover-lift-md: translateY(-4px);
+}
 
 html,
 body {
   margin: 0;
   min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(31, 111, 235, 0.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(15, 159, 110, 0.08), transparent 22%),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    "Segoe UI", "SF Pro Text", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  transition:
+    transform var(--motion-base) var(--ease-smooth),
+    box-shadow var(--motion-base) var(--ease-smooth),
+    border-color var(--motion-base) var(--ease-smooth),
+    background-color var(--motion-base) var(--ease-smooth),
+    opacity var(--motion-base) var(--ease-smooth),
+    color var(--motion-base) var(--ease-smooth);
+}
+
+button:hover {
+  transform: var(--hover-lift-sm);
+}
+
+input,
+select,
+textarea {
+  transition:
+    border-color var(--motion-base) var(--ease-smooth),
+    box-shadow var(--motion-base) var(--ease-smooth),
+    background-color var(--motion-base) var(--ease-smooth);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.12);
+}
+
+a {
+  color: inherit;
+  transition:
+    color var(--motion-base) var(--ease-smooth),
+    opacity var(--motion-base) var(--ease-smooth),
+    transform var(--motion-base) var(--ease-smooth);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes softPop {
+  from {
+    opacity: 0;
+    transform: scale(0.975) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
 }

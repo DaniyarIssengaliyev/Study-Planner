@@ -73,7 +73,7 @@ export class App implements OnInit {
     this.emailFieldAnimated.set(false);
     this.isProfileModalOpen.set(true);
 
-    if (this.faculties().length === 0) {
+    if (!this.isSuperadmin() && this.faculties().length === 0) {
       this.loadFaculties();
     }
   }
@@ -172,7 +172,23 @@ export class App implements OnInit {
   }
 
   facultyLabel(): string {
+    if (this.isSuperadmin()) {
+      return 'Administrator account';
+    }
+
     return this.auth.currentUser()?.profile.faculty?.name || 'Faculty not selected';
+  }
+
+  hasFacultySelected(): boolean {
+    if (this.isSuperadmin()) {
+      return true;
+    }
+
+    return !!this.auth.currentUser()?.profile.faculty?.id;
+  }
+
+  isSuperadmin(): boolean {
+    return this.auth.currentUser()?.profile.role === 'superadmin';
   }
 
   private loadFaculties(): void {

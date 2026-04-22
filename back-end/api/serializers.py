@@ -180,10 +180,10 @@ class StudentSummarySerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150)
     faculty_id = serializers.IntegerField(allow_null=True, required=False)
     faculty_name = serializers.CharField(allow_null=True, required=False)
-    boards_count = serializers.IntegerField()
-    tasks_count = serializers.IntegerField()
-    completed_tasks_count = serializers.IntegerField()
-    overdue_tasks_count = serializers.IntegerField()
+    boards_count = serializers.IntegerField(allow_null=True, required=False)
+    tasks_count = serializers.IntegerField(allow_null=True, required=False)
+    completed_tasks_count = serializers.IntegerField(allow_null=True, required=False)
+    overdue_tasks_count = serializers.IntegerField(allow_null=True, required=False)
 
 
 class SubjectModelSerializer(serializers.ModelSerializer):

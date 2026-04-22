@@ -459,7 +459,7 @@ export class DashboardPage implements OnInit {
       return 0;
     }
 
-    return faculty.students.reduce((sum, student) => sum + student.boards_count, 0);
+    return faculty.students.reduce((sum, student) => sum + (student.boards_count ?? 0), 0);
   }
 
   facultyTasksCount(faculty: FacultyOverview | null): number {
@@ -467,7 +467,7 @@ export class DashboardPage implements OnInit {
       return 0;
     }
 
-    return faculty.students.reduce((sum, student) => sum + student.tasks_count, 0);
+    return faculty.students.reduce((sum, student) => sum + (student.tasks_count ?? 0), 0);
   }
 
   facultyCompletedCount(faculty: FacultyOverview | null): number {
@@ -475,7 +475,7 @@ export class DashboardPage implements OnInit {
       return 0;
     }
 
-    return faculty.students.reduce((sum, student) => sum + student.completed_tasks_count, 0);
+    return faculty.students.reduce((sum, student) => sum + (student.completed_tasks_count ?? 0), 0);
   }
 
   facultyOverdueCount(faculty: FacultyOverview | null): number {
@@ -483,7 +483,7 @@ export class DashboardPage implements OnInit {
       return 0;
     }
 
-    return faculty.students.reduce((sum, student) => sum + student.overdue_tasks_count, 0);
+    return faculty.students.reduce((sum, student) => sum + (student.overdue_tasks_count ?? 0), 0);
   }
 
   facultyCompletionRate(faculty: FacultyOverview | null): number {

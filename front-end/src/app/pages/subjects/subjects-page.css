@@ -5,36 +5,37 @@
 
 .page-header h2 {
   margin: 0 0 8px;
-  font-size: 28px;
-  color: #111827;
+  font-size: 30px;
+  color: var(--text);
 }
 
 .page-header p {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-soft);
 }
 
 .error-message {
   padding: 14px 16px;
-  border: 1px solid #fecaca;
+  border: 1px solid #f2c8c8;
   border-radius: 14px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-weight: 700;
 }
 
 .empty-state {
   padding: 18px;
-  border-radius: 16px;
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: var(--surface-strong);
+  color: var(--text-soft);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .subjects-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  gap: 18px;
+  gap: 20px;
 }
 
 .faculties-nav {
@@ -47,40 +48,42 @@
   display: grid;
   gap: 8px;
   padding: 18px;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-strong);
   text-align: left;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
   transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    border-color 0.16s ease;
+    transform var(--motion-base) var(--ease-smooth),
+    box-shadow var(--motion-base) var(--ease-smooth),
+    border-color var(--motion-base) var(--ease-smooth);
+  animation: fadeInUp var(--motion-base) var(--ease-smooth) both;
 }
 
 .faculty-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+  transform: var(--hover-lift-md);
+  box-shadow: var(--shadow-md);
 }
 
 .faculty-button strong {
-  color: #111827;
+  color: var(--text);
   font-size: 16px;
 }
 
 .faculty-button span {
   width: fit-content;
-  padding: 5px 9px;
+  padding: 6px 10px;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
   font-size: 12px;
   font-weight: 700;
 }
 
 .faculty-button-active {
-  border-color: #1d4ed8;
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.12);
+  border-color: rgba(31, 111, 235, 0.28);
+  box-shadow: 0 16px 32px rgba(31, 111, 235, 0.1);
 }
 
 .faculty-panel {
@@ -101,24 +104,26 @@
 .subject-content h4,
 .student-copy h4 {
   margin: 0;
-  color: #111827;
+  color: var(--text);
 }
 
 .faculty-panel-head p,
 .subject-content p,
 .student-copy p {
   margin: 8px 0 0;
-  color: #6b7280;
+  color: var(--text-soft);
 }
 
 .faculty-section {
   display: grid;
   gap: 14px;
   padding: 22px;
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(14px);
+  animation: fadeInUp 0.34s ease both;
 }
 
 .subjects-list,
@@ -127,30 +132,36 @@
   gap: 14px;
 }
 
-.subject-card {
+.subject-card,
+.student-card {
   display: grid;
-  grid-template-columns: 52px 1fr;
   gap: 14px;
-  align-items: center;
   padding: 16px;
   border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  transition:
+    transform var(--motion-base) var(--ease-smooth),
+    box-shadow var(--motion-base) var(--ease-smooth),
+    border-color var(--motion-base) var(--ease-smooth);
+  animation: fadeInUp var(--motion-base) var(--ease-smooth) both;
+}
+
+.subject-card:hover,
+.student-card:hover {
+  transform: var(--hover-lift-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.subject-card {
+  grid-template-columns: 52px 1fr;
+  align-items: center;
 }
 
 .subject-color {
   width: 52px;
   height: 52px;
   border-radius: 16px;
-}
-
-.student-card {
-  display: grid;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
 }
 
 .student-stats {
@@ -162,11 +173,11 @@
 .student-stats span {
   padding: 6px 10px;
   border-radius: 999px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--surface-strong);
+  color: var(--text-soft);
   font-size: 12px;
   font-weight: 700;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 @media (max-width: 900px) {

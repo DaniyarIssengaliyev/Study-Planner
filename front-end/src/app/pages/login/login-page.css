@@ -3,38 +3,37 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at top left, rgba(249, 115, 22, 0.16), transparent 30%),
-    linear-gradient(135deg, #fff7ed 0%, #ffedd5 48%, #ffffff 100%);
 }
 
 .login-card {
-  width: min(100%, 420px);
-  padding: 32px;
-  border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  width: min(100%, 430px);
+  padding: 34px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
+  animation: softPop 0.34s ease;
 }
 
 .login-card h2 {
   margin: 0 0 8px;
   font-size: 32px;
-  color: #111827;
+  color: var(--text);
 }
 
 .login-card p {
-  margin: 0 0 20px;
-  color: #6b7280;
+  margin: 0 0 22px;
+  color: var(--text-soft);
 }
 
 .error-message {
   margin-bottom: 18px;
   padding: 14px 16px;
-  border: 1px solid #fecaca;
+  border: 1px solid #f2c8c8;
   border-radius: 14px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-weight: 700;
 }
 
@@ -51,29 +50,24 @@
 .field-label span {
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-soft);
 }
 
 .login-form input {
   padding: 14px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  font: inherit;
-}
-
-.login-form input:focus {
-  outline: none;
-  border-color: #f97316;
-  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.14);
+  background: var(--surface-strong);
+  color: var(--text);
 }
 
 .login-form button {
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 14px 18px;
-  border: none;
+  border: 1px solid var(--accent);
   border-radius: 14px;
-  background: linear-gradient(135deg, #ea580c, #f97316);
-  color: white;
+  background: var(--accent);
+  color: #fff;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -88,8 +82,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0;
-  color: #9ca3af;
+  margin: 24px 0;
+  color: var(--text-faint);
 }
 
 .divider::before,
@@ -97,7 +91,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: var(--border);
 }
 
 .google-button-wrap {
@@ -106,13 +100,16 @@
 }
 
 .auth-link {
-  margin-top: 20px;
-  margin-bottom: -25px;
+  margin-top: 22px;
   text-align: center;
 }
 
+.auth-link p {
+  margin: 0;
+}
+
 .auth-link a {
-  color: #ea580c;
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
 }

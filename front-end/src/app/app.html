@@ -11,11 +11,12 @@
       <aside class="sidebar">
         <h1>Study Planner</h1>
 
-        <div class="user-block">
+        <div class="user-block" [class.user-block-warning]="!hasFacultySelected()">
           <div class="user-block-head">
             <button
               type="button"
               class="profile-trigger"
+              [class.profile-trigger-warning]="!hasFacultySelected()"
               (click)="openProfileModal()"
               aria-label="Open profile settings"
               title="Open profile settings"
@@ -23,7 +24,12 @@
               <div class="user-copy">
                 <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
                 <span>{{ roleLabel() }}</span>
-                <small>{{ facultyLabel() }}</small>
+                <small
+                  [class.user-faculty-warning]="!hasFacultySelected()"
+                  [class.user-meta-neutral]="isSuperadmin()"
+                >
+                  {{ facultyLabel() }}
+                </small>
               </div>
             </button>
 
@@ -67,7 +73,7 @@
         <nav class="navigation">
           <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
           <a routerLink="/tasks" routerLinkActive="active">Boards</a>
-          <a routerLink="/subjects" routerLinkActive="active">Subjects</a>
+          <a routerLink="/subjects" routerLinkActive="active">Faculties & Subjects</a>
           @if (auth.isSuperadmin()) {
             <a routerLink="/admin/subjects" routerLinkActive="active">Superadmin Panel</a>
           }
@@ -87,7 +93,7 @@
       <div class="profile-modal-header">
         <div>
           <h3>Profile Settings</h3>
-          <p>Change your faculty, email, or password.</p>
+          <p>{{ isSuperadmin() ? 'Change your email or password.' : 'Change your faculty, email, or password.' }}</p>
         </div>
         <button
           type="button"
@@ -140,28 +146,37 @@
           </button>
         </div>
 
-        <div class="profile-action-row">
-          <label class="profile-stretch-field">
-            <span>Faculty</span>
-            <select [(ngModel)]="profileForm.faculty_id" name="profile_faculty">
-              <option [ngValue]="null">Not selected</option>
-              @for (faculty of faculties(); track faculty.id) {
-                <option [ngValue]="faculty.id">{{ faculty.name }}</option>
+        @if (!isSuperadmin()) {
+          <div class="profile-action-row">
+            <label class="profile-stretch-field">
+              <span>Faculty</span>
+              <select
+                [(ngModel)]="profileForm.faculty_id"
+                name="profile_faculty"
+                [class.profile-input-warning]="!profileForm.faculty_id"
+              >
+                <option [ngValue]="null">Not selected</option>
+                @for (faculty of faculties(); track faculty.id) {
+                  <option [ngValue]="faculty.id">{{ faculty.name }}</option>
+                }
+              </select>
+              @if (!profileForm.faculty_id) {
+                <small class="profile-warning-text">Choose a faculty to complete your profile.</small>
               }
-            </select>
-            @if (isLoadingFaculties()) {
-              <small>Loading faculties...</small>
-            }
-          </label>
-          <button
-            type="button"
-            class="profile-inline-button"
-            (click)="saveFacultySettings()"
-            [disabled]="isSavingProfile()"
-          >
-            Save
-          </button>
-        </div>
+              @if (isLoadingFaculties()) {
+                <small>Loading faculties...</small>
+              }
+            </label>
+            <button
+              type="button"
+              class="profile-inline-button"
+              (click)="saveFacultySettings()"
+              [disabled]="isSavingProfile()"
+            >
+              Save
+            </button>
+          </div>
+        }
 
         <div class="profile-password-block">
           <div class="profile-password-head">

@@ -48,10 +48,10 @@ export interface StudentSummary {
   full_name: string;
   faculty_id?: number | null;
   faculty_name?: string | null;
-  boards_count: number;
-  tasks_count: number;
-  completed_tasks_count: number;
-  overdue_tasks_count: number;
+  boards_count?: number | null;
+  tasks_count?: number | null;
+  completed_tasks_count?: number | null;
+  overdue_tasks_count?: number | null;
 }
 
 export interface FacultyOverview {

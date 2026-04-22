@@ -83,7 +83,15 @@
                   <p>@{{ student.username }}</p>
                 </div>
 
-                <div class="student-stats">
+                <div
+                  class="student-stats"
+                  *ngIf="
+                    student.boards_count !== null &&
+                    student.boards_count !== undefined &&
+                    student.tasks_count !== null &&
+                    student.tasks_count !== undefined
+                  "
+                >
                   <span>Boards: {{ student.boards_count }}</span>
                   <span>Tasks: {{ student.tasks_count }}</span>
                   <span>Done: {{ student.completed_tasks_count }}</span>
