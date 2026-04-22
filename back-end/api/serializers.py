@@ -46,7 +46,7 @@ class ProfileSettingsSerializer(serializers.Serializer):
     def validate_faculty_id(self, value):
         if value is None:
             return value
-
+ 
         if not Faculty.objects.filter(pk=value).exists():
             raise serializers.ValidationError('Faculty not found.')
         return value
