@@ -34,7 +34,15 @@
         }
       </h3>
       <button type="button" class="icon-button" (click)="closeTab()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 
@@ -170,7 +178,15 @@
     <div class="modal-header">
       <h3>Create Subject</h3>
       <button type="button" class="icon-button" (click)="closeSubjectModal()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 
@@ -230,7 +246,15 @@
     <div class="modal-header">
       <h3>Create Faculty</h3>
       <button type="button" class="icon-button" (click)="closeFacultyModal()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 
@@ -253,6 +277,51 @@
     <div class="modal-actions">
       <button type="button" class="ghost-button" (click)="closeFacultyModal()">Cancel</button>
       <button type="button" class="open-modal-button" (click)="createFaculty()">Create faculty</button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isDeleteModalOpen()" class="modal-backdrop" (click)="closeDeleteModal()">
+  <div class="modal-card modal-confirm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirm deletion</h3>
+      <button type="button" class="icon-button" (click)="closeDeleteModal()" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="confirm-body">
+      @if (deleteTarget()?.type === 'subject') {
+        <p>
+          Are you sure you want to delete subject
+          <strong>"{{ deleteTarget()?.name }}"</strong>?
+        </p>
+        <p class="confirm-note">All related tasks will also be removed.</p>
+      }
+
+      @if (deleteTarget()?.type === 'faculty') {
+        <p>
+          Are you sure you want to delete faculty
+          <strong>"{{ deleteTarget()?.name }}"</strong>?
+        </p>
+      }
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="ghost-button" (click)="closeDeleteModal()" [disabled]="isDeleting()">
+        Cancel
+      </button>
+      <button type="button" class="danger-button" (click)="confirmDelete()" [disabled]="isDeleting()">
+        {{ isDeleting() ? 'Deleting...' : 'Delete' }}
+      </button>
     </div>
   </div>
 </div>

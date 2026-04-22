@@ -5,6 +5,9 @@ import { ApiService } from '../../services/api.service';
 import { Faculty, StudentSummary, Subject } from '../../models/api.models';
 
 type AdminTab = 'subjects' | 'faculties' | 'students';
+type DeleteTarget =
+  | { type: 'faculty'; id: number; name: string }
+  | { type: 'subject'; id: number; name: string };
 
 @Component({
   selector: 'app-admin-subjects-page',
@@ -28,6 +31,9 @@ export class AdminSubjectsPage implements OnInit {
   facultyErrorMessage = signal<string | null>(null);
   isSubjectModalOpen = signal(false);
   isFacultyModalOpen = signal(false);
+  isDeleteModalOpen = signal(false);
+  isDeleting = signal(false);
+  deleteTarget = signal<DeleteTarget | null>(null);
   activeTab = signal<AdminTab | null>(null);
 
   createValidationTriggered = false;
@@ -224,45 +230,69 @@ export class AdminSubjectsPage implements OnInit {
   }
 
   deleteFaculty(faculty: Faculty): void {
-    const confirmed = window.confirm(`Delete faculty "${faculty.name}"?`);
-    if (!confirmed) {
-      return;
-    }
-
-    this.api.deleteFaculty(faculty.id).subscribe({
-      next: () => {
-        this.faculties.update((current) => current.filter((item) => item.id !== faculty.id));
-        if (this.studentFacultyFilter() === faculty.name) {
-          this.studentFacultyFilter.set('all');
-        }
-        this.loadStudents();
-        this.successMessage.set('Faculty deleted.');
-      },
-      error: (err) => {
-        this.successMessage.set(null);
-        this.errorMessage.set(err?.error?.detail || 'Failed to delete faculty.');
-      },
-    });
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.deleteTarget.set({ type: 'faculty', id: faculty.id, name: faculty.name });
+    this.isDeleteModalOpen.set(true);
   }
 
   deleteSubject(subject: Subject): void {
-    const confirmed = window.confirm(
-      `Delete subject "${subject.name}"? All related tasks will also be removed.`,
-    );
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.deleteTarget.set({ type: 'subject', id: subject.id, name: subject.name });
+    this.isDeleteModalOpen.set(true);
+  }
 
-    if (!confirmed) {
+  closeDeleteModal(): void {
+    if (this.isDeleting()) {
       return;
     }
 
-    this.api.deleteSubject(subject.id).subscribe({
+    this.isDeleteModalOpen.set(false);
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const target = this.deleteTarget();
+    if (!target) {
+      return;
+    }
+
+    this.isDeleting.set(true);
+
+    if (target.type === 'faculty') {
+      this.api.deleteFaculty(target.id).subscribe({
+        next: () => {
+          this.faculties.update((current) => current.filter((item) => item.id !== target.id));
+          if (this.studentFacultyFilter() === target.name) {
+            this.studentFacultyFilter.set('all');
+          }
+          this.loadStudents();
+          this.successMessage.set('Faculty deleted.');
+          this.isDeleting.set(false);
+          this.closeDeleteModal();
+        },
+        error: (err) => {
+          this.successMessage.set(null);
+          this.errorMessage.set(err?.error?.detail || 'Failed to delete faculty.');
+          this.isDeleting.set(false);
+        },
+      });
+      return;
+    }
+
+    this.api.deleteSubject(target.id).subscribe({
       next: () => {
-        this.subjects.update((current) => current.filter((item) => item.id !== subject.id));
+        this.subjects.update((current) => current.filter((item) => item.id !== target.id));
         this.errorMessage.set(null);
         this.successMessage.set('Subject deleted.');
+        this.isDeleting.set(false);
+        this.closeDeleteModal();
       },
       error: (err) => {
         this.successMessage.set(null);
         this.errorMessage.set(err?.error?.detail || 'Failed to delete subject.');
+        this.isDeleting.set(false);
       },
     });
   }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ApiService } from './services/api.service';
@@ -27,6 +27,14 @@ export class App implements OnInit {
   profileSuccessMessage = signal<string | null>(null);
   emailFieldAnimated = signal(false);
   isEmailInvalid = signal(false);
+  isSuperadmin = computed(() => this.auth.currentUser()?.profile.role === 'superadmin');
+  hasFacultySelected = computed(() => {
+    if (this.auth.isSuperadmin()) {
+      return true;
+    }
+
+    return !!this.auth.currentUser()?.profile.faculty?.id;
+  });
 
   profileForm = this.getEmptyProfileForm();
 
@@ -177,18 +185,6 @@ export class App implements OnInit {
     }
 
     return this.auth.currentUser()?.profile.faculty?.name || 'Faculty not selected';
-  }
-
-  hasFacultySelected(): boolean {
-    if (this.isSuperadmin()) {
-      return true;
-    }
-
-    return !!this.auth.currentUser()?.profile.faculty?.id;
-  }
-
-  isSuperadmin(): boolean {
-    return this.auth.currentUser()?.profile.role === 'superadmin';
   }
 
   private loadFaculties(): void {

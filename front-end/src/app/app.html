@@ -21,16 +21,16 @@
               aria-label="Open profile settings"
               title="Open profile settings"
             >
-              <div class="user-copy">
+              <span class="user-copy">
                 <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
                 <span>{{ roleLabel() }}</span>
                 <small
                   [class.user-faculty-warning]="!hasFacultySelected()"
-                  [class.user-meta-neutral]="isSuperadmin()"
+                  [class.user-meta-neutral]="auth.isSuperadmin()"
                 >
                   {{ facultyLabel() }}
                 </small>
-              </div>
+              </span>
             </button>
 
             <button
@@ -93,7 +93,7 @@
       <div class="profile-modal-header">
         <div>
           <h3>Profile Settings</h3>
-          <p>{{ isSuperadmin() ? 'Change your email or password.' : 'Change your faculty, email, or password.' }}</p>
+          <p>{{ auth.isSuperadmin() ? 'Change your email or password.' : 'Change your faculty, email, or password.' }}</p>
         </div>
         <button
           type="button"
@@ -101,7 +101,15 @@
           (click)="closeProfileModal()"
           aria-label="Close profile settings"
         >
-          &times;
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
         </button>
       </div>
 
@@ -146,7 +154,7 @@
           </button>
         </div>
 
-        @if (!isSuperadmin()) {
+        @if (!auth.isSuperadmin()) {
           <div class="profile-action-row">
             <label class="profile-stretch-field">
               <span>Faculty</span>

@@ -33,6 +33,7 @@
         <article class="board-tile board-tile-create" (click)="openBoardModal()">
           <div class="create-board-inner">
             <strong>Create Board</strong>
+
             <span>Add a new board for a subject or general workflow</span>
           </div>
         </article>
@@ -207,7 +208,15 @@
     <div class="modal-header">
       <h3>Create Board</h3>
       <button type="button" class="icon-button" (click)="closeBoardModal()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 
@@ -256,7 +265,15 @@
     <div class="modal-header">
       <h3>Create Task</h3>
       <button type="button" class="icon-button" (click)="closeCreateModal()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 
@@ -355,7 +372,15 @@
     <div class="modal-header">
       <h3>Task Details</h3>
       <button type="button" class="icon-button" (click)="closeTaskDetails()" aria-label="Close">
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
       </button>
     </div>
 

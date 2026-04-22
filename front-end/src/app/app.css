@@ -242,14 +242,16 @@
 }
 
 .profile-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 40px;
   height: 40px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-muted);
   color: var(--text-soft);
-  font-size: 28px;
-  line-height: 1;
   cursor: pointer;
   transition:
     transform var(--motion-base) var(--ease-smooth),
@@ -264,6 +266,11 @@
   box-shadow: var(--shadow-sm);
   border-color: var(--border-strong);
   color: var(--text);
+}
+
+.profile-close-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .profile-modal-form {

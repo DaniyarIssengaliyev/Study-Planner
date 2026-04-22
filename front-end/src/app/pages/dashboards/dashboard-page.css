@@ -198,7 +198,7 @@ p {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
   margin-bottom: 10px;
 }
 
@@ -206,7 +206,8 @@ p {
   grid-column: span 6;
   display: grid;
   grid-template-rows: auto 1fr;
-  align-content: start;
+  align-content: stretch;
+  height: 100%;
   padding-bottom: 24px;
 }
 
@@ -226,6 +227,7 @@ p {
   grid-template-columns: minmax(180px, 220px) 1fr;
   gap: 28px;
   align-items: center;
+  min-height: 100%;
 }
 
 .donut-chart {
@@ -285,11 +287,14 @@ p {
   gap: 14px;
   align-items: end;
   min-height: 250px;
+  height: 100%;
 }
 
 .deadline-bar-group {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
   height: 100%;
 }
