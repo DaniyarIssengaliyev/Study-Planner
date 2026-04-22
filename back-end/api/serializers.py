@@ -31,6 +31,65 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'profile']
 
 
+class ProfileSettingsSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    faculty_id = serializers.IntegerField(required=False, allow_null=True)
+    current_password = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    new_password = serializers.CharField(required=False, allow_blank=True, min_length=6, write_only=True)
+
+    def validate_email(self, value):
+        user = self.context['request'].user
+        if User.objects.filter(email__iexact=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError('User with this email already exists.')
+        return value
+
+    def validate_faculty_id(self, value):
+        if value is None:
+            return value
+
+        if not Faculty.objects.filter(pk=value).exists():
+            raise serializers.ValidationError('Faculty not found.')
+        return value
+
+    def validate(self, attrs):
+        current_password = attrs.get('current_password', '')
+        new_password = attrs.get('new_password', '')
+
+        if current_password and not new_password:
+            raise serializers.ValidationError({
+                'new_password': ['Enter a new password.']
+            })
+
+        if new_password and not current_password:
+            raise serializers.ValidationError({
+                'current_password': ['Enter your current password.']
+            })
+
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        profile = user.profile
+
+        user.email = self.validated_data['email']
+
+        new_password = self.validated_data.get('new_password', '')
+        current_password = self.validated_data.get('current_password', '')
+        if new_password:
+            if not user.check_password(current_password):
+                raise serializers.ValidationError({
+                    'current_password': ['Current password is incorrect.']
+                })
+            user.set_password(new_password)
+
+        user.save()
+
+        profile.faculty_id = self.validated_data.get('faculty_id')
+        profile.save(update_fields=['faculty'])
+
+        return user
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
     full_name = serializers.CharField(write_only=True)
@@ -92,7 +151,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         if not login_value:
             raise serializers.ValidationError({
-                'login': ['Введите email или username.']
+                'login': ['Enter email or username.']
             })
 
         matched_user = User.objects.filter(email__iexact=login_value).first()
@@ -119,6 +178,7 @@ class StudentSummarySerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(max_length=150)
     full_name = serializers.CharField(max_length=150)
+    faculty_id = serializers.IntegerField(allow_null=True, required=False)
     faculty_name = serializers.CharField(allow_null=True, required=False)
     boards_count = serializers.IntegerField()
     tasks_count = serializers.IntegerField()
@@ -127,9 +187,30 @@ class StudentSummarySerializer(serializers.Serializer):
 
 
 class SubjectModelSerializer(serializers.ModelSerializer):
+    faculty_name = serializers.CharField(source='faculty.name', read_only=True)
+
     class Meta:
         model = Subject
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'color', 'faculty', 'faculty_name']
+
+    def validate(self, attrs):
+        faculty = attrs.get('faculty') or getattr(self.instance, 'faculty', None)
+
+        if not faculty:
+            raise serializers.ValidationError({
+                'faculty': ['Select a faculty for this subject.']
+            })
+
+        return attrs
+
+
+class FacultyOverviewSerializer(serializers.ModelSerializer):
+    subjects = SubjectModelSerializer(many=True, read_only=True)
+    students = StudentSummarySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Faculty
+        fields = ['id', 'name', 'subjects', 'students']
 
 
 class BoardModelSerializer(serializers.ModelSerializer):

@@ -1,140 +1,344 @@
 <h2>Dashboard</h2>
-<p>Select a board to see its statistics, charts, and 7-day outlook.</p>
+
+@if (isSuperadmin()) {
+  <p>Faculty analytics for superadmin.</p>
+} @else {
+  <p>Select a board to see its statistics, charts, and 7-day outlook.</p>
+}
 
 <div *ngIf="errorMessage()" class="error-message">{{ errorMessage() }}</div>
 
-<div
-  *ngIf="!isLoadingTasks() && !isLoadingSubjects() && !isLoadingBoards()"
-  class="dashboard-layout"
->
-  @if (!selectedBoard()) {
-    <section class="boards-toolbar">
-      <label>
-        <span>Sort boards</span>
-        <select [value]="boardSort()" (change)="boardSort.set($any($event.target).value)">
-          <option value="tasks_desc">Most tasks</option>
-          <option value="progress_desc">Highest progress</option>
-          <option value="created_desc">Newest</option>
-          <option value="title">Title</option>
-        </select>
-      </label>
-    </section>
-
-    <section class="boards-grid">
-      @for (board of visibleBoards(); track board.id) {
-        <article class="board-card" (click)="selectBoard(board.id)">
-          <div class="board-card-top">
-            <h4>{{ board.title }}</h4>
-            <span>{{ board.subject_name || 'General board' }}</span>
-          </div>
-
-          <div class="board-stats">
-            <span>Tasks: {{ board.tasks_count ?? 0 }}</span>
-            <span>Done: {{ board.completed_tasks_count ?? 0 }}</span>
-          </div>
-
-          <div class="board-progress-line">
-            <strong>Progress</strong>
-            <span>{{ boardProgress(board) }}%</span>
-          </div>
-        </article>
-      }
-    </section>
-  }
-
-  @if (selectedBoard(); as board) {
-    <section class="board-analytics">
-      <div class="analytics-head">
-        <div class="analytics-title-row">
-          <button class="ghost-button back-button" type="button" (click)="clearBoardSelection()">
-            <span class="back-arrow" aria-hidden="true">&#8592;</span>
-            <span>Back</span>
-          </button>
-          <h3>{{ board.title }}</h3>
-        </div>
-
-        <p>{{ board.description || 'No description' }}</p>
-      </div>
-
-      <section class="dashboard-cards">
-        <div class="card metric-card">
-          <h3>Total Tasks</h3>
-          <p>{{ totalTasks() }}</p>
-        </div>
-
-        <div class="card metric-card">
-          <h3>Completed</h3>
-          <p>{{ completedTasks() }}</p>
-        </div>
-
-        <div class="card metric-card">
-          <h3>In Progress</h3>
-          <p>{{ inProgressTasks() }}</p>
-        </div>
-
-        <div class="card metric-card danger">
-          <h3>Overdue</h3>
-          <p>{{ overdueTasks() }}</p>
-        </div>
-
-        <div class="card metric-card">
-          <h3>Subjects</h3>
-          <p>{{ totalSubjects() }}</p>
-        </div>
-
-        <div class="card metric-card accent">
-          <h3>Completion Rate</h3>
-          <p>{{ completionRate() }}%</p>
-        </div>
+@if (isSuperadmin()) {
+  <div *ngIf="!isLoadingFaculties()" class="dashboard-layout">
+    @if (!selectedFaculty()) {
+      <section class="boards-toolbar">
+        <label>
+          <span>Sort faculties</span>
+          <select [value]="facultySort()" (change)="facultySort.set($any($event.target).value)">
+            <option value="tasks_desc">Most tasks</option>
+            <option value="students_desc">Most students</option>
+            <option value="subjects_desc">Most subjects</option>
+            <option value="completion_desc">Highest completion</option>
+            <option value="name">Name</option>
+          </select>
+        </label>
       </section>
 
-      <section class="dashboard-grid">
-        <article class="card chart-card">
-          <div class="section-head">
-            <div>
-              <h3>Task Distribution</h3>
-            </div>
-            <strong>{{ totalTasks() }}</strong>
-          </div>
-
-          <div class="status-chart-wrap">
-            <div class="donut-chart" [style.background]="statusChartStyle()">
-              <div class="donut-center">
-                <span>{{ completionRate() }}%</span>
-                <small>done</small>
-              </div>
+      <section class="boards-grid">
+        @for (faculty of visibleFaculties(); track faculty.id) {
+          <article class="board-card faculty-card" (click)="selectFaculty(faculty.id)">
+            <div class="board-card-top">
+              <h4>{{ faculty.name }}</h4>
+              <span>{{ facultyStudentsCount(faculty) }} students</span>
             </div>
 
-            <div class="status-legend">
-              <div class="legend-item" *ngFor="let slice of statusBreakdown()">
-                <span class="legend-dot" [style.background]="slice.color"></span>
-                <span class="legend-label">{{ slice.label }}</span>
-                <strong>{{ slice.value }}</strong>
-              </div>
+            <div class="board-stats">
+              <span>Subjects: {{ facultySubjectsCount(faculty) }}</span>
+              <span>Tasks: {{ facultyTasksCount(faculty) }}</span>
+              <span>Overdue: {{ facultyOverdueCount(faculty) }}</span>
             </div>
-          </div>
-        </article>
 
-        <article class="card chart-card">
-          <div class="section-head">
-            <div>
-              <h3>Next 7 Days</h3>
+            <div class="board-progress-line">
+              <strong>Completion</strong>
+              <span>{{ facultyCompletionRate(faculty) }}%</span>
             </div>
-            <strong>{{ maxDeadlineValue() }}</strong>
-          </div>
-
-          <div class="deadline-chart">
-            <div class="deadline-bar-group" *ngFor="let bucket of deadlineBuckets()">
-              <span class="deadline-count">{{ bucket.value }}</span>
-              <div
-                class="deadline-bar"
-                [style.height]="chartBarHeight(bucket.value, maxDeadlineValue())"
-              ></div>
-              <span class="deadline-label">{{ bucket.shortLabel }}</span>
-            </div>
-          </div>
-        </article>
+          </article>
+        }
       </section>
-    </section>
-  }
-</div>
+    }
+
+    @if (selectedFaculty(); as faculty) {
+      <section class="board-analytics">
+        <div class="analytics-head">
+          <div class="analytics-title-row">
+            <button class="ghost-button back-button" type="button" (click)="clearFacultySelection()">
+              <span class="back-arrow" aria-hidden="true">&#8592;</span>
+              <span>Back</span>
+            </button>
+            <h3>{{ faculty.name }}</h3>
+          </div>
+
+          <p>
+            {{ facultyStudentsCount(faculty) }} students, {{ facultySubjectsCount(faculty) }} subjects
+          </p>
+        </div>
+
+        <section class="dashboard-cards">
+          <div class="card metric-card">
+            <h3>Students</h3>
+            <p>{{ facultyStudentsCount(faculty) }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>Subjects</h3>
+            <p>{{ facultySubjectsCount(faculty) }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>Boards</h3>
+            <p>{{ facultyBoardsCount(faculty) }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>Tasks</h3>
+            <p>{{ facultyTasksCount(faculty) }}</p>
+          </div>
+
+          <div class="card metric-card danger">
+            <h3>Overdue</h3>
+            <p>{{ facultyOverdueCount(faculty) }}</p>
+          </div>
+
+          <div class="card metric-card accent">
+            <h3>Completion Rate</h3>
+            <p>{{ facultyCompletionRate(faculty) }}%</p>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="card chart-card">
+            <div class="section-head">
+              <div>
+                <h3>Task Distribution</h3>
+              </div>
+              <strong>{{ faculty.analytics.total_tasks }}</strong>
+            </div>
+
+            <div class="status-chart-wrap">
+              <div class="donut-chart" [style.background]="facultyStatusChartStyle()">
+                <div class="donut-center">
+                  <span>{{ faculty.analytics.completion_rate }}%</span>
+                  <small>done</small>
+                </div>
+              </div>
+
+              <div class="status-legend">
+                <div class="legend-item" *ngFor="let slice of facultyStatusBreakdown()">
+                  <span class="legend-dot" [style.background]="slice.color"></span>
+                  <span class="legend-label">{{ slice.label }}</span>
+                  <strong>{{ slice.value }}</strong>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card chart-card">
+            <div class="section-head">
+              <div>
+                <h3>Next 7 Days</h3>
+              </div>
+              <strong>{{ facultyMaxDeadlineValue(faculty) }}</strong>
+            </div>
+
+            <div class="deadline-chart">
+              <div class="deadline-bar-group" *ngFor="let bucket of faculty.analytics.deadline_buckets">
+                <span class="deadline-count">{{ bucket.value }}</span>
+                <div
+                  class="deadline-bar"
+                  [style.height]="chartBarHeight(bucket.value, facultyMaxDeadlineValue(faculty))"
+                ></div>
+                <span class="deadline-label">{{ formatFacultyBucketLabel(bucket.label) }}</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="card faculty-subject-load-card">
+          <div class="section-head">
+            <div>
+              <h3>Subject Load</h3>
+            </div>
+            <strong>{{ faculty.analytics.subject_load.length }}</strong>
+          </div>
+
+          <div *ngIf="faculty.analytics.subject_load.length === 0" class="empty-state">
+            No tasks for subjects in this faculty yet.
+          </div>
+
+          <div class="subject-load-list" *ngIf="faculty.analytics.subject_load.length > 0">
+            @for (item of faculty.analytics.subject_load; track item.name) {
+              <div class="subject-load-row">
+                <div class="subject-load-copy">
+                  <strong>{{ item.name }}</strong>
+                  <span>{{ item.value }} tasks</span>
+                </div>
+                <div class="subject-load-bar">
+                  <span
+                    [style.width]="chartBarWidth(item.value, facultyMaxSubjectLoadValue(faculty))"
+                  ></span>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="faculty-students-section card">
+          <div class="section-head">
+            <div>
+              <h3>Students in Faculty</h3>
+            </div>
+            <strong>{{ faculty.students.length }}</strong>
+          </div>
+
+          <div *ngIf="faculty.students.length === 0" class="empty-state">
+            No students in this faculty yet.
+          </div>
+
+          <div class="faculty-students-list" *ngIf="faculty.students.length > 0">
+            @for (student of faculty.students; track student.id) {
+              <article class="faculty-student-card">
+                <div>
+                  <h4>{{ student.full_name }}</h4>
+                  <span>@{{ student.username }}</span>
+                </div>
+
+                <div class="board-stats">
+                  <span>Boards: {{ student.boards_count }}</span>
+                  <span>Tasks: {{ student.tasks_count }}</span>
+                  <span>Done: {{ student.completed_tasks_count }}</span>
+                  <span>Overdue: {{ student.overdue_tasks_count }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      </section>
+    }
+  </div>
+} @else {
+  <div
+    *ngIf="!isLoadingTasks() && !isLoadingSubjects() && !isLoadingBoards()"
+    class="dashboard-layout"
+  >
+    @if (!selectedBoard()) {
+      <section class="boards-toolbar">
+        <label>
+          <span>Sort boards</span>
+          <select [value]="boardSort()" (change)="boardSort.set($any($event.target).value)">
+            <option value="tasks_desc">Most tasks</option>
+            <option value="progress_desc">Highest progress</option>
+            <option value="created_desc">Newest</option>
+            <option value="title">Title</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="boards-grid">
+        @for (board of visibleBoards(); track board.id) {
+          <article class="board-card" (click)="selectBoard(board.id)">
+            <div class="board-card-top">
+              <h4>{{ board.title }}</h4>
+              <span>{{ board.subject_name || 'General board' }}</span>
+            </div>
+
+            <div class="board-stats">
+              <span>Tasks: {{ board.tasks_count ?? 0 }}</span>
+              <span>Done: {{ board.completed_tasks_count ?? 0 }}</span>
+            </div>
+
+            <div class="board-progress-line">
+              <strong>Progress</strong>
+              <span>{{ boardProgress(board) }}%</span>
+            </div>
+          </article>
+        }
+      </section>
+    }
+
+    @if (selectedBoard(); as board) {
+      <section class="board-analytics">
+        <div class="analytics-head">
+          <div class="analytics-title-row">
+            <button class="ghost-button back-button" type="button" (click)="clearBoardSelection()">
+              <span class="back-arrow" aria-hidden="true">&#8592;</span>
+              <span>Back</span>
+            </button>
+            <h3>{{ board.title }}</h3>
+          </div>
+
+          <p>{{ board.description || 'No description' }}</p>
+        </div>
+
+        <section class="dashboard-cards">
+          <div class="card metric-card">
+            <h3>Total Tasks</h3>
+            <p>{{ totalTasks() }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>Completed</h3>
+            <p>{{ completedTasks() }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>In Progress</h3>
+            <p>{{ inProgressTasks() }}</p>
+          </div>
+
+          <div class="card metric-card danger">
+            <h3>Overdue</h3>
+            <p>{{ overdueTasks() }}</p>
+          </div>
+
+          <div class="card metric-card">
+            <h3>Subjects</h3>
+            <p>{{ totalSubjects() }}</p>
+          </div>
+
+          <div class="card metric-card accent">
+            <h3>Completion Rate</h3>
+            <p>{{ completionRate() }}%</p>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="card chart-card">
+            <div class="section-head">
+              <div>
+                <h3>Task Distribution</h3>
+              </div>
+              <strong>{{ totalTasks() }}</strong>
+            </div>
+
+            <div class="status-chart-wrap">
+              <div class="donut-chart" [style.background]="statusChartStyle()">
+                <div class="donut-center">
+                  <span>{{ completionRate() }}%</span>
+                  <small>done</small>
+                </div>
+              </div>
+
+              <div class="status-legend">
+                <div class="legend-item" *ngFor="let slice of statusBreakdown()">
+                  <span class="legend-dot" [style.background]="slice.color"></span>
+                  <span class="legend-label">{{ slice.label }}</span>
+                  <strong>{{ slice.value }}</strong>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card chart-card">
+            <div class="section-head">
+              <div>
+                <h3>Next 7 Days</h3>
+              </div>
+              <strong>{{ maxDeadlineValue() }}</strong>
+            </div>
+
+            <div class="deadline-chart">
+              <div class="deadline-bar-group" *ngFor="let bucket of deadlineBuckets()">
+                <span class="deadline-count">{{ bucket.value }}</span>
+                <div
+                  class="deadline-bar"
+                  [style.height]="chartBarHeight(bucket.value, maxDeadlineValue())"
+                ></div>
+                <span class="deadline-label">{{ bucket.shortLabel }}</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+    }
+  </div>
+}

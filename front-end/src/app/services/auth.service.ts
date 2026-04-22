@@ -52,6 +52,10 @@ export class AuthService {
     );
   }
 
+  applyCurrentUser(user: User): void {
+    this.currentUser.set(user);
+  }
+
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.currentUser.set(null);

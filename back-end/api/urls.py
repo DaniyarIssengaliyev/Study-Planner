@@ -5,10 +5,12 @@ from .views import (
     BoardListCreateAPIView,
     FacultyDetailAPIView,
     FacultyListAPIView,
+    FacultyOverviewAPIView,
     GoogleLoginAPIView,
     LoginAPIView,
     MeAPIView,
     NoteListAPIView,
+    ProfileSettingsAPIView,
     RegisterAPIView,
     StudySessionListAPIView,
     SubjectDetailAPIView,
@@ -27,8 +29,10 @@ urlpatterns = [
     path('auth/login/', LoginAPIView.as_view(), name='login'),
     path('auth/google/', GoogleLoginAPIView.as_view(), name='google-login'),
     path('auth/me/', MeAPIView.as_view(), name='me'),
+    path('auth/profile/settings/', ProfileSettingsAPIView.as_view(), name='profile-settings'),
 
     path('faculties/', FacultyListAPIView.as_view(), name='faculty-list'),
+    path('faculties/overview/', FacultyOverviewAPIView.as_view(), name='faculty-overview'),
     path('faculties/<int:pk>/', FacultyDetailAPIView.as_view(), name='faculty-detail'),
 
     path('boards/', BoardListCreateAPIView.as_view(), name='board-list-create'),

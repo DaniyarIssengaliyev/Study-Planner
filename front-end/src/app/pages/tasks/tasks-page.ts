@@ -443,11 +443,50 @@ export class TasksPage implements OnInit, OnDestroy {
       error: (err) => {
         this.taskErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to delete task.');
       },
-    });
+      });
   }
 
-  onDragStart(taskId: number): void {
+  toggleTaskCompletion(event: Event, task: Task): void {
+    event.stopPropagation();
+
+    const nextStatus: BoardStatus = task.status === 'completed' ? 'todo' : 'completed';
+
+    this.api
+      .updateTask(task.id, {
+        title: task.title,
+        description: task.description,
+        due_date: task.due_date,
+        priority: task.priority,
+        status: nextStatus,
+        subject: task.subject,
+        board: task.board ?? null,
+      })
+      .subscribe({
+        next: (updatedTask) => {
+          this.replaceTask(updatedTask);
+          if (this.selectedTask()?.id === updatedTask.id) {
+            this.selectedTask.set(updatedTask);
+            this.taskForm.status = this.normalizeStatus(updatedTask.status);
+          }
+          this.successMessage.set(
+            updatedTask.status === 'completed' ? 'Task completed.' : 'Task moved back to To Do.',
+          );
+        },
+        error: (err) => {
+          this.pageErrorMessage.set(
+            this.extractErrorMessage(err?.error) || 'Failed to update task status.',
+          );
+        },
+      });
+  }
+
+  onDragStart(event: DragEvent, taskId: number): void {
     this.draggedTaskId.set(taskId);
+    event.dataTransfer?.setData('text/plain', String(taskId));
+    event.dataTransfer?.setDragImage?.(event.target as Element, 24, 24);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
   }
 
   onDragEnd(): void {
@@ -466,8 +505,11 @@ export class TasksPage implements OnInit, OnDestroy {
     }
   }
 
-  dropToColumn(status: BoardStatus): void {
-    const taskId = this.draggedTaskId();
+  dropToColumn(event: DragEvent, status: BoardStatus): void {
+    event.preventDefault();
+
+    const transferredTaskId = Number(event.dataTransfer?.getData('text/plain'));
+    const taskId = this.draggedTaskId() ?? (Number.isNaN(transferredTaskId) ? null : transferredTaskId);
     if (!taskId) {
       return;
     }
@@ -496,6 +538,7 @@ export class TasksPage implements OnInit, OnDestroy {
             this.selectedTask.set(updatedTask);
             this.taskForm.status = this.normalizeStatus(updatedTask.status);
           }
+          this.successMessage.set(`Task moved to ${this.columns.find((column) => column.key === status)?.title}.`);
           this.draggedTaskId.set(null);
           this.dragOverColumn.set(null);
         },
@@ -660,6 +703,32 @@ export class TasksPage implements OnInit, OnDestroy {
     if (priority === 'high') return 'High';
     if (priority === 'low') return 'Low';
     return 'Medium';
+  }
+
+  deadlineTone(task: Task | null): 'neutral' | 'success' | 'warning' | 'danger' {
+    if (!task?.due_date) {
+      return 'neutral';
+    }
+
+    const dueDate = new Date(task.due_date);
+    if (Number.isNaN(dueDate.getTime())) {
+      return 'neutral';
+    }
+
+    if (task.status === 'completed') {
+      if (!task.completed_at) {
+        return 'success';
+      }
+
+      const completedAt = new Date(task.completed_at);
+      if (Number.isNaN(completedAt.getTime())) {
+        return 'success';
+      }
+
+      return completedAt.getTime() <= dueDate.getTime() ? 'success' : 'warning';
+    }
+
+    return Date.now() > dueDate.getTime() || task.status === 'overdue' ? 'danger' : 'neutral';
   }
 
   showBoardFieldError(field: 'title'): boolean {

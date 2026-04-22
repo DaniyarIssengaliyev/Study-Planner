@@ -52,6 +52,13 @@ class Subject(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     color = models.CharField(max_length=30, blank=True)
+    faculty = models.ForeignKey(
+        Faculty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='subjects',
+    )
 
     def __str__(self):
         return self.name

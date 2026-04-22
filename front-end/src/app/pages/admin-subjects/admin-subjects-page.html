@@ -56,6 +56,7 @@
 
             <div class="subject-content">
               <h3>{{ subject.name }}</h3>
+              <span class="subject-faculty-badge">{{ subject.faculty_name || 'No faculty' }}</span>
               <p>{{ subject.description || 'No description yet.' }}</p>
             </div>
 
@@ -200,6 +201,20 @@
       <label class="field-label">
         <span>Color</span>
         <input [(ngModel)]="newSubject.color" name="color" placeholder="#2563eb" />
+      </label>
+
+      <label class="field-label">
+        <span>Faculty *</span>
+        <select
+          [(ngModel)]="newSubject.faculty"
+          name="subject_faculty"
+          [class.field-invalid]="showCreateFieldError('faculty')"
+        >
+          <option [ngValue]="null">Select faculty</option>
+          @for (faculty of faculties(); track faculty.id) {
+            <option [ngValue]="faculty.id">{{ faculty.name }}</option>
+          }
+        </select>
       </label>
     </div>
 

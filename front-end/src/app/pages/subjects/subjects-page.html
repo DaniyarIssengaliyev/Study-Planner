@@ -1,7 +1,7 @@
 <section class="subjects-page">
   <header class="page-header">
-    <h2>Предметы</h2>
-    <p>Общий список предметов</p>
+    <h2>Faculties & Subjects</h2>
+    <p>Select a faculty to see its subjects and students.</p>
   </header>
 
   <div *ngIf="errorMessage()" class="error-message">
@@ -9,22 +9,91 @@
   </div>
 
   <div *ngIf="isLoading()" class="empty-state">
-    Загрузка предметов...
+    Loading faculties...
   </div>
 
-  <div *ngIf="!isLoading() && !errorMessage()" class="subjects-list">
-    @for (subject of subjects(); track subject.id) {
-      <article class="subject-card">
-        <div
-          class="subject-color"
-          [style.background]="subject.color || '#2563eb'"
-        ></div>
+  <div *ngIf="!isLoading() && !errorMessage() && faculties().length === 0" class="empty-state">
+    No faculties available.
+  </div>
 
-        <div class="subject-content">
-          <h3>{{ subject.name }}</h3>
-          <p>{{ subject.description || 'Описание пока не добавлено.' }}</p>
+  <div *ngIf="!isLoading() && faculties().length > 0" class="subjects-layout">
+    <aside class="faculties-nav">
+      @for (faculty of faculties(); track faculty.id) {
+        <button
+          type="button"
+          class="faculty-button"
+          [class.faculty-button-active]="selectedFacultyId() === faculty.id"
+          (click)="selectFaculty(faculty.id)"
+        >
+          <strong>{{ faculty.name }}</strong>
+          <span>{{ faculty.subjects.length }} subjects</span>
+          <span>{{ faculty.students.length }} students</span>
+        </button>
+      }
+    </aside>
+
+    @if (selectedFaculty(); as faculty) {
+      <section class="faculty-panel">
+        <div class="faculty-panel-head">
+          <div>
+            <h3>{{ faculty.name }}</h3>
+            <p>
+              {{ faculty.subjects.length }} subjects and {{ faculty.students.length }} students
+            </p>
+          </div>
         </div>
-      </article>
+
+        <div class="faculty-section">
+          <div class="section-head">
+            <h4>Subjects</h4>
+          </div>
+
+          <div *ngIf="faculty.subjects.length === 0" class="empty-state">
+            No subjects added for this faculty yet.
+          </div>
+
+          <div class="subjects-list" *ngIf="faculty.subjects.length > 0">
+            @for (subject of faculty.subjects; track subject.id) {
+              <article class="subject-card">
+                <div class="subject-color" [style.background]="subject.color || '#2563eb'"></div>
+
+                <div class="subject-content">
+                  <h4>{{ subject.name }}</h4>
+                  <p>{{ subject.description || 'No description yet.' }}</p>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+
+        <div class="faculty-section">
+          <div class="section-head">
+            <h4>Students</h4>
+          </div>
+
+          <div *ngIf="faculty.students.length === 0" class="empty-state">
+            No students in this faculty yet.
+          </div>
+
+          <div class="students-list" *ngIf="faculty.students.length > 0">
+            @for (student of faculty.students; track student.id) {
+              <article class="student-card">
+                <div class="student-copy">
+                  <h4>{{ student.full_name }}</h4>
+                  <p>@{{ student.username }}</p>
+                </div>
+
+                <div class="student-stats">
+                  <span>Boards: {{ student.boards_count }}</span>
+                  <span>Tasks: {{ student.tasks_count }}</span>
+                  <span>Done: {{ student.completed_tasks_count }}</span>
+                  <span>Overdue: {{ student.overdue_tasks_count }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
     }
   </div>
 </section>

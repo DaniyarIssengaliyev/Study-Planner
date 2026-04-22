@@ -2,7 +2,7 @@
   <div class="app-loading">
     <div class="app-loading-card">
       <h2>Study Planner</h2>
-      <p>Загрузка приложения...</p>
+      <p>Loading application...</p>
     </div>
   </div>
 } @else {
@@ -13,10 +13,19 @@
 
         <div class="user-block">
           <div class="user-block-head">
-            <div class="user-copy">
-              <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
-              <span>{{ auth.currentUser()?.profile?.role }}</span>
-            </div>
+            <button
+              type="button"
+              class="profile-trigger"
+              (click)="openProfileModal()"
+              aria-label="Open profile settings"
+              title="Open profile settings"
+            >
+              <div class="user-copy">
+                <strong>{{ auth.currentUser()?.profile?.full_name }}</strong>
+                <span>{{ roleLabel() }}</span>
+                <small>{{ facultyLabel() }}</small>
+              </div>
+            </button>
 
             <button
               type="button"
@@ -69,5 +78,130 @@
     <main class="content" [class.content-guest]="!auth.isAuthenticated()">
       <router-outlet />
     </main>
+  </div>
+}
+
+@if (isProfileModalOpen()) {
+  <div class="profile-modal-backdrop" (click)="closeProfileModal()">
+    <div class="profile-modal-card" (click)="$event.stopPropagation()">
+      <div class="profile-modal-header">
+        <div>
+          <h3>Profile Settings</h3>
+          <p>Change your faculty, email, or password.</p>
+        </div>
+        <button
+          type="button"
+          class="profile-close-button"
+          (click)="closeProfileModal()"
+          aria-label="Close profile settings"
+        >
+          &times;
+        </button>
+      </div>
+
+      @if (profileErrorMessage()) {
+        <div class="profile-message profile-message-error">{{ profileErrorMessage() }}</div>
+      }
+
+      @if (profileSuccessMessage()) {
+        <div class="profile-message profile-message-success">{{ profileSuccessMessage() }}</div>
+      }
+
+      <div class="profile-modal-form">
+        <label>
+          <span>Full name</span>
+          <input [value]="auth.currentUser()?.profile?.full_name || ''" type="text" disabled />
+        </label>
+
+        <label>
+          <span>Role</span>
+          <input [value]="roleLabel()" type="text" disabled />
+        </label>
+
+        <div class="profile-action-row">
+          <label class="profile-stretch-field">
+            <span>Email</span>
+            <input
+              [(ngModel)]="profileForm.email"
+              name="profile_email"
+              type="email"
+              (input)="onEmailInput()"
+              [class.profile-input-invalid]="isEmailInvalid()"
+              [class.profile-input-shake]="emailFieldAnimated()"
+            />
+          </label>
+          <button
+            type="button"
+            class="profile-inline-button"
+            (click)="saveEmailSettings()"
+            [disabled]="isSavingProfile()"
+          >
+            Change
+          </button>
+        </div>
+
+        <div class="profile-action-row">
+          <label class="profile-stretch-field">
+            <span>Faculty</span>
+            <select [(ngModel)]="profileForm.faculty_id" name="profile_faculty">
+              <option [ngValue]="null">Not selected</option>
+              @for (faculty of faculties(); track faculty.id) {
+                <option [ngValue]="faculty.id">{{ faculty.name }}</option>
+              }
+            </select>
+            @if (isLoadingFaculties()) {
+              <small>Loading faculties...</small>
+            }
+          </label>
+          <button
+            type="button"
+            class="profile-inline-button"
+            (click)="saveFacultySettings()"
+            [disabled]="isSavingProfile()"
+          >
+            Save
+          </button>
+        </div>
+
+        <div class="profile-password-block">
+          <div class="profile-password-head">
+            <span>Change password</span>
+          </div>
+
+          <div class="profile-password-grid">
+            <label>
+              <span>Current password</span>
+              <input
+                [(ngModel)]="profileForm.current_password"
+                name="profile_current_password"
+                type="password"
+                placeholder="Enter current password"
+              />
+            </label>
+
+            <label>
+              <span>New password</span>
+              <input
+                [(ngModel)]="profileForm.new_password"
+                name="profile_new_password"
+                type="password"
+                placeholder="Enter new password"
+              />
+            </label>
+          </div>
+
+          <div class="profile-password-actions">
+            <button
+              type="button"
+              class="profile-primary-button"
+              (click)="savePasswordSettings()"
+              [disabled]="isSavingProfile()"
+            >
+              {{ isSavingProfile() ? 'Saving...' : 'Change password' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 }

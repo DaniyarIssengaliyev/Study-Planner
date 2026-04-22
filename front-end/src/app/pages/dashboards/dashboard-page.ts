@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ApiService } from '../../services/api.service';
-import { Board, Subject, Task } from '../../models/api.models';
+import { AuthService } from '../../services/auth.service';
+import { Board, FacultyOverview, Subject, Task } from '../../models/api.models';
 
 type TaskStatusKey = 'todo' | 'in_progress' | 'completed' | 'overdue';
 type BoardSort = 'title' | 'tasks_desc' | 'progress_desc' | 'created_desc';
+type FacultySort = 'name' | 'students_desc' | 'subjects_desc' | 'tasks_desc' | 'completion_desc';
 
 interface ChartSlice {
   key: TaskStatusKey;
@@ -24,6 +26,12 @@ interface DailyBucket {
   value: number;
 }
 
+interface FacultyChartSlice {
+  label: string;
+  value: number;
+  color: string;
+}
+
 @Component({
   selector: 'app-dashboard-page',
   imports: [CommonModule],
@@ -33,18 +41,26 @@ interface DailyBucket {
 })
 export class DashboardPage implements OnInit {
   private api = inject(ApiService);
+  auth = inject(AuthService);
 
   tasks = signal<Task[]>([]);
   subjects = signal<Subject[]>([]);
   boards = signal<Board[]>([]);
+  faculties = signal<FacultyOverview[]>([]);
 
   isLoadingTasks = signal(true);
   isLoadingSubjects = signal(true);
   isLoadingBoards = signal(true);
+  isLoadingFaculties = signal(true);
   errorMessage = signal<string | null>(null);
 
   selectedBoardId = signal<number | null>(null);
   boardSort = signal<BoardSort>('tasks_desc');
+
+  selectedFacultyId = signal<number | null>(null);
+  facultySort = signal<FacultySort>('tasks_desc');
+
+  isSuperadmin = computed(() => this.auth.isSuperadmin());
 
   selectedBoard = computed(() => {
     const boardId = this.selectedBoardId();
@@ -78,14 +94,16 @@ export class DashboardPage implements OnInit {
 
   totalTasks = computed(() => this.filteredTasks().length);
   completedTasks = computed(
-    () => this.filteredTasks().filter((task) => task.status === 'completed' && !this.isTaskLate(task)).length,
+    () =>
+      this.filteredTasks().filter((task) => task.status === 'completed' && !this.isTaskLate(task))
+        .length,
   );
   inProgressTasks = computed(
-    () => this.filteredTasks().filter((task) => task.status === 'in_progress' && !this.isTaskLate(task)).length,
+    () =>
+      this.filteredTasks().filter((task) => task.status === 'in_progress' && !this.isTaskLate(task))
+        .length,
   );
-  overdueTasks = computed(
-    () => this.filteredTasks().filter((task) => this.isTaskLate(task)).length,
-  );
+  overdueTasks = computed(() => this.filteredTasks().filter((task) => this.isTaskLate(task)).length);
   totalSubjects = computed(() => {
     const ids = new Set(this.filteredTasks().map((task) => task.subject));
     return ids.size;
@@ -114,7 +132,8 @@ export class DashboardPage implements OnInit {
     {
       key: 'todo',
       label: 'To Do',
-      value: this.filteredTasks().filter((task) => task.status === 'todo' && !this.isTaskLate(task)).length,
+      value: this.filteredTasks().filter((task) => task.status === 'todo' && !this.isTaskLate(task))
+        .length,
       color: '#f59e0b',
     },
     {
@@ -199,7 +218,86 @@ export class DashboardPage implements OnInit {
     });
   });
 
+  selectedFaculty = computed(() => {
+    const facultyId = this.selectedFacultyId();
+    return this.faculties().find((faculty) => faculty.id === facultyId) ?? null;
+  });
+
+  facultyStatusBreakdown = computed<FacultyChartSlice[]>(() => {
+    const faculty = this.selectedFaculty();
+    if (!faculty) {
+      return [];
+    }
+
+    return [
+      {
+        label: 'To Do',
+        value: faculty.analytics.todo_tasks,
+        color: '#f59e0b',
+      },
+      {
+        label: 'In Progress',
+        value: faculty.analytics.in_progress_tasks,
+        color: '#3b82f6',
+      },
+      {
+        label: 'Completed',
+        value: faculty.analytics.completed_tasks,
+        color: '#10b981',
+      },
+      {
+        label: 'Overdue',
+        value: faculty.analytics.overdue_tasks,
+        color: '#ef4444',
+      },
+    ];
+  });
+
+  facultyStatusChartStyle = computed(() => {
+    const faculty = this.selectedFaculty();
+    if (!faculty || faculty.analytics.total_tasks === 0) {
+      return 'conic-gradient(#e5e7eb 0deg 360deg)';
+    }
+
+    let currentAngle = 0;
+    const segments = this.facultyStatusBreakdown().map((slice) => {
+      const angle = (slice.value / faculty.analytics.total_tasks) * 360;
+      const start = currentAngle;
+      const end = currentAngle + angle;
+      currentAngle = end;
+      return `${slice.color} ${start}deg ${end}deg`;
+    });
+
+    return `conic-gradient(${segments.join(', ')})`;
+  });
+
+  visibleFaculties = computed(() => {
+    const items = [...this.faculties()];
+
+    switch (this.facultySort()) {
+      case 'name':
+        return items.sort((a, b) => a.name.localeCompare(b.name));
+      case 'students_desc':
+        return items.sort((a, b) => b.students.length - a.students.length || a.name.localeCompare(b.name));
+      case 'subjects_desc':
+        return items.sort((a, b) => b.subjects.length - a.subjects.length || a.name.localeCompare(b.name));
+      case 'completion_desc':
+        return items.sort(
+          (a, b) => this.facultyCompletionRate(b) - this.facultyCompletionRate(a) || a.name.localeCompare(b.name),
+        );
+      default:
+        return items.sort(
+          (a, b) => this.facultyTasksCount(b) - this.facultyTasksCount(a) || a.name.localeCompare(b.name),
+        );
+    }
+  });
+
   ngOnInit(): void {
+    if (this.isSuperadmin()) {
+      this.loadFacultyOverview();
+      return;
+    }
+
     this.loadTasks();
     this.loadSubjects();
     this.loadBoards();
@@ -250,12 +348,37 @@ export class DashboardPage implements OnInit {
     });
   }
 
+  loadFacultyOverview(): void {
+    this.isLoadingFaculties.set(true);
+
+    this.api.getFacultyOverview().subscribe({
+      next: (faculties) => {
+        const sorted = [...faculties].sort((a, b) => a.name.localeCompare(b.name));
+        this.faculties.set(sorted);
+        this.selectedFacultyId.set(sorted[0]?.id ?? null);
+        this.isLoadingFaculties.set(false);
+      },
+      error: (err) => {
+        this.errorMessage.set(err?.error?.detail || 'Failed to load faculty statistics.');
+        this.isLoadingFaculties.set(false);
+      },
+    });
+  }
+
   selectBoard(boardId: number): void {
     this.selectedBoardId.set(boardId);
   }
 
   clearBoardSelection(): void {
     this.selectedBoardId.set(null);
+  }
+
+  selectFaculty(facultyId: number): void {
+    this.selectedFacultyId.set(facultyId);
+  }
+
+  clearFacultySelection(): void {
+    this.selectedFacultyId.set(null);
   }
 
   chartBarHeight(value: number, max: number): string {
@@ -321,6 +444,72 @@ export class DashboardPage implements OnInit {
     }
 
     return Date.now() > dueDate.getTime();
+  }
+
+  facultyStudentsCount(faculty: FacultyOverview | null): number {
+    return faculty?.students.length ?? 0;
+  }
+
+  facultySubjectsCount(faculty: FacultyOverview | null): number {
+    return faculty?.subjects.length ?? 0;
+  }
+
+  facultyBoardsCount(faculty: FacultyOverview | null): number {
+    if (!faculty) {
+      return 0;
+    }
+
+    return faculty.students.reduce((sum, student) => sum + student.boards_count, 0);
+  }
+
+  facultyTasksCount(faculty: FacultyOverview | null): number {
+    if (!faculty) {
+      return 0;
+    }
+
+    return faculty.students.reduce((sum, student) => sum + student.tasks_count, 0);
+  }
+
+  facultyCompletedCount(faculty: FacultyOverview | null): number {
+    if (!faculty) {
+      return 0;
+    }
+
+    return faculty.students.reduce((sum, student) => sum + student.completed_tasks_count, 0);
+  }
+
+  facultyOverdueCount(faculty: FacultyOverview | null): number {
+    if (!faculty) {
+      return 0;
+    }
+
+    return faculty.students.reduce((sum, student) => sum + student.overdue_tasks_count, 0);
+  }
+
+  facultyCompletionRate(faculty: FacultyOverview | null): number {
+    const total = this.facultyTasksCount(faculty);
+    if (total === 0) {
+      return 0;
+    }
+
+    return Math.round((this.facultyCompletedCount(faculty) / total) * 100);
+  }
+
+  facultyMaxDeadlineValue(faculty: FacultyOverview | null): number {
+    return Math.max(...(faculty?.analytics.deadline_buckets.map((bucket) => bucket.value) ?? [0]), 0);
+  }
+
+  facultyMaxSubjectLoadValue(faculty: FacultyOverview | null): number {
+    return Math.max(...(faculty?.analytics.subject_load.map((item) => item.value) ?? [0]), 0);
+  }
+
+  formatFacultyBucketLabel(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
   }
 
   private startOfDay(value: Date): Date {

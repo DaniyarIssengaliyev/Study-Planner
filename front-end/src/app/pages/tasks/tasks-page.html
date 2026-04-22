@@ -66,10 +66,34 @@
             title="Delete board"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-              <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              <path
+                d="M4 7h16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M10 11v6M14 11v6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M6 7l1 12h10l1-12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M9 7V4h6v3"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
         </div>
@@ -87,7 +111,7 @@
             [class.board-column-active]="dragOverColumn() === column.key"
             (dragover)="allowDrop($event, column.key)"
             (dragleave)="leaveDropZone(column.key)"
-            (drop)="dropToColumn(column.key)"
+            (drop)="dropToColumn($event, column.key)"
           >
             <header class="column-header">
               <h3>{{ column.title }}</h3>
@@ -98,18 +122,40 @@
               @for (task of tasksByStatus(column.key); track task.id) {
                 <article
                   class="task-card"
+                  [class.task-card-completed]="task.status === 'completed'"
                   [class.task-card-dragging]="draggedTaskId() === task.id"
                   draggable="true"
-                  (dragstart)="onDragStart(task.id)"
+                  (dragstart)="onDragStart($event, task.id)"
                   (dragend)="onDragEnd()"
                   (click)="openTaskDetails(task)"
                 >
                   <div class="task-card-head">
-                    <h4>{{ task.title }}</h4>
+                    <div class="task-title-wrap">
+                      <button
+                        type="button"
+                        class="task-status-toggle"
+                        [class.task-status-toggle-checked]="task.status === 'completed'"
+                        (click)="toggleTaskCompletion($event, task)"
+                        [attr.aria-label]="
+                          task.status === 'completed'
+                            ? 'Mark task as active'
+                            : 'Mark task as completed'
+                        "
+                        [title]="
+                          task.status === 'completed' ? 'Move back to To Do' : 'Mark as completed'
+                        "
+                      >
+                        <span class="task-status-toggle-dot"></span>
+                      </button>
+                      <h4 [class.task-title-done]="task.status === 'completed'">
+                        {{ task.title }}
+                      </h4>
+                    </div>
                     <span
                       class="priority-badge"
                       [class.high]="task.priority === 'high'"
                       [class.low]="task.priority === 'low'"
+                      [class.medium]="task.priority === 'medium'"
                     >
                       {{ priorityLabel(task.priority) }}
                     </span>
@@ -117,7 +163,14 @@
 
                   <div class="task-meta">
                     <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
-                    <span>{{ formatDueDate(task.due_date) }}</span>
+                    <span
+                      class="task-deadline-badge"
+                      [class.task-deadline-success]="deadlineTone(task) === 'success'"
+                      [class.task-deadline-warning]="deadlineTone(task) === 'warning'"
+                      [class.task-deadline-danger]="deadlineTone(task) === 'danger'"
+                    >
+                      {{ formatDueDate(task.due_date) }}
+                    </span>
                   </div>
 
                   <div class="task-progress" *ngIf="subtaskCount(task) > 0">
@@ -371,8 +424,22 @@
         @if (selectedTask(); as task) {
           <div class="task-extra-meta">
             <span>{{ task.subject_name || 'Subject #' + task.subject }}</span>
-            <span>{{ formatDueDate(task.due_date) }}</span>
-            <span>{{ deadlineCountdown(task) }}</span>
+            <span
+              class="task-deadline-badge"
+              [class.task-deadline-success]="deadlineTone(task) === 'success'"
+              [class.task-deadline-warning]="deadlineTone(task) === 'warning'"
+              [class.task-deadline-danger]="deadlineTone(task) === 'danger'"
+            >
+              {{ formatDueDate(task.due_date) }}
+            </span>
+            <span
+              class="task-deadline-badge"
+              [class.task-deadline-success]="deadlineTone(task) === 'success'"
+              [class.task-deadline-warning]="deadlineTone(task) === 'warning'"
+              [class.task-deadline-danger]="deadlineTone(task) === 'danger'"
+            >
+              {{ deadlineCountdown(task) }}
+            </span>
             <span *ngIf="subtaskCount(task) > 0">
               {{ completedSubtasks(task) }}/{{ subtaskCount(task) }} subtasks
             </span>
@@ -395,10 +462,34 @@
               title="Delete task"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path
+                  d="M4 7h16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M10 11v6M14 11v6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M6 7l1 12h10l1-12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M9 7V4h6v3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
           </div>
@@ -409,7 +500,6 @@
         @if (selectedTask(); as task) {
           <div class="subtasks-header">
             <h4>Subtasks</h4>
-            <span>{{ progressPercentage(task) }}%</span>
           </div>
 
           <div class="subtask-create">
@@ -451,10 +541,34 @@
                   title="Delete subtask"
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 7h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    <path d="M6 7l1 12h10l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                    <path d="M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                    <path
+                      d="M4 7h16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M10 11v6M14 11v6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M6 7l1 12h10l1-12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M9 7V4h6v3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                 </button>
               </div>

@@ -8,6 +8,7 @@ import {
   CreateSubtaskRequest,
   CreateTaskRequest,
   Faculty,
+  FacultyOverview,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
@@ -15,6 +16,7 @@ import {
   StudentSummary,
   Subtask,
   Task,
+  UpdateProfileSettingsRequest,
   UpdateBoardRequest,
   UpdateSubtaskRequest,
   UpdateTaskRequest,
@@ -59,8 +61,20 @@ export class ApiService {
     });
   }
 
+  updateProfileSettings(data: UpdateProfileSettingsRequest): Observable<User> {
+    return this.http.put<User>(`${this.baseUrl}/auth/profile/settings/`, data, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
   getFaculties(): Observable<Faculty[]> {
     return this.http.get<Faculty[]>(`${this.baseUrl}/faculties/`);
+  }
+
+  getFacultyOverview(): Observable<FacultyOverview[]> {
+    return this.http.get<FacultyOverview[]>(`${this.baseUrl}/faculties/overview/`, {
+      headers: this.getAuthHeaders(),
+    });
   }
 
   createFaculty(data: CreateFacultyRequest): Observable<Faculty> {

@@ -26,6 +26,8 @@ export interface Subject {
   name: string;
   color?: string;
   description?: string;
+  faculty?: number | null;
+  faculty_name?: string | null;
 }
 
 export interface Board {
@@ -44,11 +46,41 @@ export interface StudentSummary {
   id: number;
   username: string;
   full_name: string;
+  faculty_id?: number | null;
   faculty_name?: string | null;
   boards_count: number;
   tasks_count: number;
   completed_tasks_count: number;
   overdue_tasks_count: number;
+}
+
+export interface FacultyOverview {
+  id: number;
+  name: string;
+  subjects: Subject[];
+  students: StudentSummary[];
+  analytics: FacultyAnalytics;
+}
+
+export interface FacultyAnalyticsBucket {
+  label: string;
+  value: number;
+}
+
+export interface FacultyAnalyticsItem {
+  name: string;
+  value: number;
+}
+
+export interface FacultyAnalytics {
+  total_tasks: number;
+  completed_tasks: number;
+  in_progress_tasks: number;
+  overdue_tasks: number;
+  todo_tasks: number;
+  completion_rate: number;
+  subject_load: FacultyAnalyticsItem[];
+  deadline_buckets: FacultyAnalyticsBucket[];
 }
 
 export interface Subtask {
@@ -103,6 +135,13 @@ export interface RegisterRequest {
   faculty_id?: number | null;
 }
 
+export interface UpdateProfileSettingsRequest {
+  email: string;
+  faculty_id?: number | null;
+  current_password?: string;
+  new_password?: string;
+}
+
 export interface LoginResponse {
   access: string;
   refresh: string;
@@ -133,6 +172,7 @@ export interface CreateSubjectRequest {
   name: string;
   color?: string;
   description?: string;
+  faculty: number | null;
 }
 
 export interface CreateSubtaskRequest {

@@ -57,6 +57,7 @@ export class AdminSubjectsPage implements OnInit {
     name: '',
     description: '',
     color: '',
+    faculty: null as number | null,
   };
 
   newFaculty = {
@@ -128,6 +129,7 @@ export class AdminSubjectsPage implements OnInit {
       name: '',
       description: '',
       color: '',
+      faculty: null,
     };
   }
 
@@ -146,11 +148,16 @@ export class AdminSubjectsPage implements OnInit {
       return;
     }
 
+    if (!this.newSubject.faculty) {
+      return;
+    }
+
     this.api
       .createSubject({
         name: this.newSubject.name.trim(),
         description: this.newSubject.description.trim(),
         color: this.newSubject.color.trim(),
+        faculty: this.newSubject.faculty,
       })
       .subscribe({
         next: (subject) => {
@@ -165,6 +172,7 @@ export class AdminSubjectsPage implements OnInit {
             name: '',
             description: '',
             color: '',
+            faculty: null,
           };
           this.closeSubjectModal();
         },
@@ -259,8 +267,16 @@ export class AdminSubjectsPage implements OnInit {
     });
   }
 
-  showCreateFieldError(field: 'name'): boolean {
-    return field === 'name' && this.createValidationTriggered && !this.newSubject.name.trim();
+  showCreateFieldError(field: 'name' | 'faculty'): boolean {
+    if (!this.createValidationTriggered) {
+      return false;
+    }
+
+    if (field === 'name') {
+      return !this.newSubject.name.trim();
+    }
+
+    return !this.newSubject.faculty;
   }
 
   showFacultyFieldError(field: 'name'): boolean {

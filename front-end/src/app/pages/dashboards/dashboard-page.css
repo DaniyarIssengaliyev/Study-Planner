@@ -65,6 +65,10 @@ p {
   box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06);
 }
 
+.faculty-card {
+  min-height: 156px;
+}
+
 .board-card-top,
 .board-stats,
 .subject-meta,
@@ -304,6 +308,79 @@ p {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
+}
+
+.faculty-students-section {
+  display: grid;
+  gap: 16px;
+}
+
+.faculty-subject-load-card {
+  display: grid;
+  gap: 16px;
+}
+
+.subject-load-list {
+  display: grid;
+  gap: 14px;
+}
+
+.subject-load-row {
+  display: grid;
+  gap: 10px;
+}
+
+.subject-load-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subject-load-copy strong {
+  color: #111827;
+}
+
+.subject-load-copy span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.subject-load-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.subject-load-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb 0%, #14b8a6 100%);
+}
+
+.faculty-students-list {
+  display: grid;
+  gap: 12px;
+}
+
+.faculty-student-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.faculty-student-card h4 {
+  margin: 0;
+  color: #111827;
+}
+
+.faculty-student-card span {
+  color: #64748b;
 }
 
 @media (max-width: 980px) {
