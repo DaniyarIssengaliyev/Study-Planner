@@ -5,14 +5,11 @@ from .views import (
     BoardListCreateAPIView,
     FacultyDetailAPIView,
     FacultyListAPIView,
-    FacultyOverviewAPIView,
     GoogleLoginAPIView,
     LoginAPIView,
     MeAPIView,
-    NoteListAPIView,
     ProfileSettingsAPIView,
     RegisterAPIView,
-    StudySessionListAPIView,
     SubjectDetailAPIView,
     SubjectListCreateAPIView,
     SubtaskDetailAPIView,
@@ -20,8 +17,7 @@ from .views import (
     TaskDetailAPIView,
     TaskListCreateAPIView,
     student_summary,
-    subject_summary,
-    task_list_simple,
+    FacultyOverviewAPIView,
 )
 
 urlpatterns = [
@@ -38,8 +34,6 @@ urlpatterns = [
     path('boards/', BoardListCreateAPIView.as_view(), name='board-list-create'),
     path('boards/<int:pk>/', BoardDetailAPIView.as_view(), name='board-detail'),
 
-    path('tasks/simple/', task_list_simple, name='task-list-simple'),
-    path('subjects/summary/', subject_summary, name='subject-summary'),
     path('students/summary/', student_summary, name='student-summary'),
 
     path('subjects/', SubjectListCreateAPIView.as_view(), name='subject-list-create'),
@@ -51,6 +45,4 @@ urlpatterns = [
     path('tasks/<int:task_pk>/subtasks/', SubtaskListCreateAPIView.as_view(), name='subtask-list-create'),
     path('subtasks/<int:pk>/', SubtaskDetailAPIView.as_view(), name='subtask-detail'),
 
-    path('sessions/', StudySessionListAPIView.as_view(), name='session-list'),
-    path('notes/', NoteListAPIView.as_view(), name='note-list'),
 ]

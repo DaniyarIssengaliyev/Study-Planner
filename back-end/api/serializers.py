@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Board, Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
+from .models import Board, Faculty, Profile, Subject, Subtask, Task, TaskActivity
 
 
 class FacultySerializer(serializers.ModelSerializer):
@@ -163,18 +163,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
-class TaskSimpleSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    title = serializers.CharField(max_length=200)
-    status = serializers.CharField(max_length=20)
-
-
-class SubjectSummarySerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(max_length=100)
-    tasks_count = serializers.IntegerField()
-
-
 class StudentSummarySerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(max_length=150)
@@ -203,16 +191,6 @@ class SubjectModelSerializer(serializers.ModelSerializer):
             })
 
         return attrs
-
-
-class FacultyOverviewSerializer(serializers.ModelSerializer):
-    subjects = SubjectModelSerializer(many=True, read_only=True)
-    students = StudentSummarySerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Faculty
-        fields = ['id', 'name', 'subjects', 'students']
-
 
 class BoardModelSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
@@ -325,14 +303,3 @@ class TaskModelSerializer(serializers.ModelSerializer):
         completed = obj.subtasks.filter(is_completed=True).count()
         return round((completed / total) * 100)
 
-
-class StudySessionModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudySession
-        fields = '__all__'
-
-
-class NoteModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Note
-        fields = '__all__'

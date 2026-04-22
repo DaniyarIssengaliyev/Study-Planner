@@ -17,23 +17,18 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Board, Faculty, Note, Profile, StudySession, Subject, Subtask, Task, TaskActivity
+from .models import Board, Faculty, Profile, Subject, Subtask, Task, TaskActivity
 from .serializers import (
     BoardModelSerializer,
     CustomTokenObtainPairSerializer,
     FacultySerializer,
-    FacultyOverviewSerializer,
     GoogleLoginSerializer,
-    NoteModelSerializer,
     ProfileSettingsSerializer,
     RegisterSerializer,
-    StudySessionModelSerializer,
     SubjectModelSerializer,
-    SubjectSummarySerializer,
     StudentSummarySerializer,
     SubtaskSerializer,
     TaskModelSerializer,
-    TaskSimpleSerializer,
     UserSerializer,
 )
 
@@ -473,32 +468,6 @@ class BoardDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['GET'])
-def task_list_simple(request):
-    if request.user.is_authenticated and get_user_role(request.user) != 'superadmin':
-        tasks = Task.objects.filter(owner=request.user)
-    else:
-        tasks = Task.objects.all()
-
-    serializer = TaskSimpleSerializer(tasks, many=True)
-    return Response(serializer.data)
-
-
-@api_view(['GET'])
-def subject_summary(request):
-    subjects = Subject.objects.select_related('faculty').annotate(tasks_count=Count('tasks'))
-    data = [
-        {
-            'id': subject.id,
-            'name': subject.name,
-            'tasks_count': subject.tasks_count,
-        }
-        for subject in subjects
-    ]
-    serializer = SubjectSummarySerializer(data, many=True)
-    return Response(serializer.data)
-
-
 def update_overdue_tasks():
     tasks = Task.objects.filter(status__in=['todo', 'in_progress'])
     for task in tasks:
@@ -730,21 +699,3 @@ class SubtaskDetailAPIView(APIView):
 
         subtask.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class StudySessionListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        sessions = StudySession.objects.all()
-        serializer = StudySessionModelSerializer(sessions, many=True)
-        return Response(serializer.data)
-
-
-class NoteListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        notes = Note.objects.all()
-        serializer = NoteModelSerializer(notes, many=True)
-        return Response(serializer.data)
