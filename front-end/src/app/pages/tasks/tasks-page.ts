@@ -41,6 +41,9 @@ export class TasksPage implements OnInit, OnDestroy {
   isCreateModalOpen = signal(false);
   isTaskModalOpen = signal(false);
   isBoardModalOpen = signal(false);
+  isDeleteBoardModalOpen = signal(false);
+  isDeletingBoard = signal(false);
+  deleteBoardTarget = signal<Board | null>(null);
 
   selectedTask = signal<Task | null>(null);
   draggedTaskId = signal<number | null>(null);
@@ -192,24 +195,43 @@ export class TasksPage implements OnInit, OnDestroy {
 
   deleteBoard(boardId: number): void {
     const board = this.boards().find((item) => item.id === boardId);
-    const confirmed = window.confirm(
-      `Delete board "${board?.title ?? 'this board'}"? All related tasks will also be removed.`,
-    );
-
-    if (!confirmed) {
+    if (!board) {
       return;
     }
 
-    this.api.deleteBoard(boardId).subscribe({
+    this.deleteBoardTarget.set(board);
+    this.isDeleteBoardModalOpen.set(true);
+  }
+
+  closeDeleteBoardModal(): void {
+    if (this.isDeletingBoard()) {
+      return;
+    }
+
+    this.isDeleteBoardModalOpen.set(false);
+    this.deleteBoardTarget.set(null);
+  }
+
+  confirmDeleteBoard(): void {
+    const targetBoard = this.deleteBoardTarget();
+    if (!targetBoard) {
+      return;
+    }
+
+    this.isDeletingBoard.set(true);
+    this.api.deleteBoard(targetBoard.id).subscribe({
       next: () => {
-        this.boards.update((current) => current.filter((item) => item.id !== boardId));
-        if (this.selectedBoardId() === boardId) {
+        this.boards.update((current) => current.filter((item) => item.id !== targetBoard.id));
+        if (this.selectedBoardId() === targetBoard.id) {
           this.router.navigate(['/tasks']);
         }
         this.successMessage.set('Board deleted.');
+        this.isDeletingBoard.set(false);
+        this.closeDeleteBoardModal();
       },
       error: (err) => {
         this.pageErrorMessage.set(this.extractErrorMessage(err?.error) || 'Failed to delete board.');
+        this.isDeletingBoard.set(false);
       },
     });
   }

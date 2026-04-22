@@ -620,6 +620,57 @@
   </div>
 </div>
 
+<div *ngIf="isDeleteBoardModalOpen()" class="modal-backdrop" (click)="closeDeleteBoardModal()">
+  <div class="modal-card modal-confirm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirm deletion</h3>
+      <button
+        type="button"
+        class="icon-button"
+        (click)="closeDeleteBoardModal()"
+        aria-label="Close"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="confirm-body">
+      <p>
+        Are you sure you want to delete board
+        <strong>"{{ deleteBoardTarget()?.title || 'this board' }}"</strong>?
+      </p>
+      <p class="confirm-note">All related tasks will also be removed.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="ghost-button"
+        (click)="closeDeleteBoardModal()"
+        [disabled]="isDeletingBoard()"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="danger-button"
+        (click)="confirmDeleteBoard()"
+        [disabled]="isDeletingBoard()"
+      >
+        {{ isDeletingBoard() ? 'Deleting...' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <ng-template #emptySubtasks>
   <div class="empty-subtasks">No subtasks yet</div>
 </ng-template>
